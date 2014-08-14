@@ -78,9 +78,9 @@ class DataPanel extends JPanel {
                         final Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
                         c.setForeground(Color.WHITE);
                         if (value instanceof Number && ((Number) value).intValue() > 0) {
-                            c.setBackground(Color.RED);
+                            c.setBackground(Color.RED.darker());
                         } else {
-                            c.setBackground(Color.GREEN);
+                            c.setBackground(Color.GREEN.darker());
                         }
                         return c;
                     }
