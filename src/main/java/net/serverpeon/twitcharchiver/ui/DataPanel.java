@@ -5,6 +5,8 @@ import com.google.common.base.Predicates;
 import net.serverpeon.twitcharchiver.downloader.VideoStoreTableView;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumnModel;
 import javax.swing.table.TableModel;
 import java.awt.*;
@@ -59,7 +61,33 @@ class DataPanel extends JPanel {
 
         final TableColumnModel cm = this.table.getColumnModel();
         cm.getColumn(VideoStoreTableView.COLUMNS.DOWNLOAD_PROGRESS.getIdx())
-                .setCellRenderer(new ComponentDataRenderer());
+                .setCellRenderer(new TableCellRenderer() {
+                    @Override
+                    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                        if (value instanceof JComponent) {
+                            return (JComponent) value;
+                        } else {
+                            return null;
+                        }
+                    }
+                });
+        cm.getColumn(VideoStoreTableView.COLUMNS.VIDEO_MUTED.getIdx())
+                .setCellRenderer(new DefaultTableCellRenderer() {
+                    @Override
+                    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                        final Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                        c.setForeground(Color.WHITE);
+                        if (value instanceof Number && ((Number) value).intValue() > 0) {
+                            c.setBackground(Color.RED);
+                        } else {
+                            c.setBackground(Color.GREEN);
+                        }
+                        return c;
+                    }
+                });
+
+        cm.getColumn(VideoStoreTableView.COLUMNS.VIDEO_MUTED.getIdx())
+                .setMaxWidth(30);
 
         cm.getColumn(VideoStoreTableView.COLUMNS.FILE_PARTS_TOTAL.getIdx())
                 .setMaxWidth(30);

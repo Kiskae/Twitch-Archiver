@@ -4,6 +4,7 @@ import com.google.common.base.Predicate;
 import net.serverpeon.twitcharchiver.downloader.VideoStore;
 import net.serverpeon.twitcharchiver.downloader.VideoStoreDownloader;
 import net.serverpeon.twitcharchiver.twitch.InvalidOAuthTokenException;
+import net.serverpeon.twitcharchiver.twitch.SubscriberOnlyException;
 import net.serverpeon.twitcharchiver.twitch.TwitchApi;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -95,7 +96,7 @@ public class GUI extends JFrame {
                 executors.execute(new Runnable() {
                     @Override
                     public void run() {
-                        vs.loadData(limit, new Runnable() {
+                        final Runnable r = new Runnable() {
                             @Override
                             public void run() {
                                 SwingUtilities.invokeLater(new Runnable() {
@@ -108,7 +109,22 @@ public class GUI extends JFrame {
                                     }
                                 });
                             }
-                        });
+                        };
+
+                        try {
+                            vs.loadData(limit, r);
+                        } catch (SubscriberOnlyException ex) {
+                            r.run();
+                            SwingUtilities.invokeLater(new Runnable() {
+                                @Override
+                                public void run() {
+                                    JOptionPane.showMessageDialog(GUI.this,
+                                            "These videos are limited to subscribers, this should only show up if you're messing with code.",
+                                            "I cannae see them, captain",
+                                            JOptionPane.ERROR_MESSAGE);
+                                }
+                            });
+                        }
                     }
                 });
             }

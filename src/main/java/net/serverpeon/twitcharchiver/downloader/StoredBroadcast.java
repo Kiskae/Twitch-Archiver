@@ -1,6 +1,8 @@
 package net.serverpeon.twitcharchiver.downloader;
 
+import com.google.common.base.Predicate;
 import com.google.common.base.Throwables;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
@@ -96,7 +98,7 @@ public class StoredBroadcast {
     }
 
     private void updateProgressBar() {
-        final int percentage = (downloadedParts * 100) / getNumberOfParts();
+        final int percentage = getNumberOfParts() != 0 ? (downloadedParts * 100) / getNumberOfParts() : 0;
         this.downloadProgress.setValue(percentage);
     }
 
@@ -124,6 +126,16 @@ public class StoredBroadcast {
         return timeFormatter.print(
                 Period.seconds((int) this.bi.getVideoLength(TimeUnit.SECONDS)).normalizedStandard()
         );
+    }
+
+    public int getNumberOfMutedParts() {
+        return FluentIterable.from(this.bi.getSources())
+                .filter(new Predicate<BroadcastInformation.VideoSource>() {
+                    @Override
+                    public boolean apply(BroadcastInformation.VideoSource videoSource) {
+                        return videoSource.muted;
+                    }
+                }).size();
     }
 
     public int getNumberOfParts() {

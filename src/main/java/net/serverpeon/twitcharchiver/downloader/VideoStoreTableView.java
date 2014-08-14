@@ -126,8 +126,13 @@ public class VideoStoreTableView extends AbstractTableModel {
             public Object apply(StoredBroadcast storedBroadcast) {
                 return storedBroadcast.getDownloadProgress();
             }
+        }),
+        VIDEO_MUTED(10, "Videos Muted", Number.class, false, new Function<StoredBroadcast, Object>() {
+            @Override
+            public Object apply(StoredBroadcast storedBroadcast) {
+                return storedBroadcast.getNumberOfMutedParts();
+            }
         });
-
 
         private final static COLUMNS[] columnsByIdx;
         private final int idx;

@@ -234,13 +234,18 @@ public class TwitchApi {
                         final String video_file_url = obj.get("url").getAsString();
                         final int length = obj.get("length").getAsInt();
 
+                        final JsonElement upkeep = obj.get("upkeep");
+                        final boolean muted = upkeep.isJsonPrimitive() && upkeep.getAsString().equals("fail");
+
                         return new BroadcastInformation.VideoSource(
                                 video_file_url,
-                                length
+                                length,
+                                muted
                         );
                     }
                 }).toList();
 
+        if (sources.isEmpty()) throw new SubscriberOnlyException();
         return new BroadcastInformation(title, views, length, broadcastId, sources, recorded_at);
     }
 

@@ -73,10 +73,12 @@ public class BroadcastInformation {
     public static class VideoSource {
         public final String videoFileUrl;
         public final int length; //seconds
+        public final boolean muted;
 
-        public VideoSource(final String video_file_url, final int length) {
+        public VideoSource(final String video_file_url, final int length, final boolean muted) {
             this.videoFileUrl = video_file_url;
             this.length = length;
+            this.muted = muted;
         }
 
         @Override
