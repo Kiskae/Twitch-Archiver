@@ -127,7 +127,7 @@ public class VideoStoreTableView extends AbstractTableModel {
                 return storedBroadcast.getDownloadProgress();
             }
         }),
-        VIDEO_MUTED(10, "Videos Muted", Number.class, false, new Function<StoredBroadcast, Object>() {
+        VIDEO_MUTED(10, "MP", Number.class, false, new Function<StoredBroadcast, Object>() {
             @Override
             public Object apply(StoredBroadcast storedBroadcast) {
                 return storedBroadcast.getNumberOfMutedParts();
