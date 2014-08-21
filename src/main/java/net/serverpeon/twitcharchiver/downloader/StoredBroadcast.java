@@ -213,15 +213,28 @@ public class StoredBroadcast {
             byte[] buffer
     ) throws IOException {
         targetFile.createNewFile();
+
+        long totalRead = 0;
         logger.debug("Beginning download of {} to {}", vs.videoFileUrl, targetFile);
         try (final InputStream input = new BufferedInputStream(new URL(vs.videoFileUrl).openStream())) {
             try (final OutputStream output = new FileOutputStream(targetFile)) {
                 int readBytes;
                 while ((readBytes = input.read(buffer)) > 0) {
                     output.write(buffer, 0, readBytes);
+                    totalRead += readBytes;
                 }
             }
         }
+
+        if (totalRead < vs.length) {
+            //Heuristic, if the video is less than 1bps, its probably corrupted/wrong
+            throw new IOException(String.format(
+                    "Invalid file size %d bytes, %d seconds",
+                    totalRead,
+                    vs.length
+            ));
+        }
+
         logger.debug("{} downloaded!", targetFile);
     }
 
