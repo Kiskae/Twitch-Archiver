@@ -139,7 +139,8 @@ public class GUI extends JFrame {
                         "Please make sure you have enough disk space to store the videos. \n" +
                                 "Do you have enough space?",
                         "Check your disk space!",
-                        JOptionPane.YES_NO_OPTION);
+                        JOptionPane.YES_NO_OPTION
+                );
 
                 if (ret == JOptionPane.YES_OPTION && vs != null) {
                     oauth.setEnabled(false);
@@ -156,6 +157,12 @@ public class GUI extends JFrame {
                             download.setEnabled(true);
                             vp.setEnabled(true);
                             download.setProcessing(false);
+
+                            JOptionPane.showMessageDialog(GUI.this,
+                                    "All downloads have finished",
+                                    "DONE",
+                                    JOptionPane.INFORMATION_MESSAGE
+                            );
                         }
                     }, download.getNumberOfProcesses()).start();
                 }
