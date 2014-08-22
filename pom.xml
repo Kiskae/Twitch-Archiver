@@ -46,6 +46,12 @@
         </dependency>
     </dependencies>
 
+    <scm>
+        <developerConnection>scm:git:git@github.com:Kiskae/Twitch-Archiver.git</developerConnection>
+        <connection>scm:git:git@github.com:Kiskae/Twitch-Archiver.git</connection>
+        <url>https://github.com/Kiskae/Twitch-Archiver/tree/master/</url>
+    </scm>
+
     <build>
         <defaultGoal>clean install</defaultGoal>
         <plugins>
@@ -87,6 +93,15 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>2.5</version>
+                <configuration>
+                    <tagNameFormat>v@{project.version}</tagNameFormat>
+                </configuration>
             </plugin>
 
             <!-- http://logging.apache.org/log4j/2.x/manual/plugins.html#Plugin_Preloading -->
