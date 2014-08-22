@@ -21,10 +21,13 @@ import org.joda.time.format.PeriodFormatterBuilder;
 import javax.swing.*;
 import java.io.*;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class StoredBroadcast {
+    private final static int PROGRESS_MAX = 100;
+    private final JProgressBar downloadProgress = new JProgressBar(0, PROGRESS_MAX);
     private final static Logger logger = LogManager.getLogger(StoredBroadcast.class);
     private final static PeriodFormatter timeFormatter = new PeriodFormatterBuilder()
             .appendHours()
@@ -38,7 +41,6 @@ public class StoredBroadcast {
     private final static DateTimeFormatter dateFormatter = DateTimeFormat
             .forPattern(DateTimeFormat.patternForStyle("MM", null));
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private final JProgressBar downloadProgress = new JProgressBar();
     private final BroadcastInformation bi;
     private final File storageFolder;
 
@@ -61,6 +63,50 @@ public class StoredBroadcast {
         //Updated downloaded
         readStatusFile();
         updateProgressBar();
+    }
+
+    private static void downloadSource(
+            BroadcastInformation.VideoSource vs,
+            File targetFile,
+            byte[] buffer,
+            BiConsumer<Long, Long> progressUpdater
+    ) throws IOException {
+        targetFile.createNewFile();
+
+        long totalRead = 0;
+        logger.debug("Beginning download of {} to {}", vs.videoFileUrl, targetFile);
+
+        final URLConnection urlConnection = new URL(vs.videoFileUrl).openConnection();
+        final long reportedSize = urlConnection.getContentLengthLong();
+
+        if (!urlConnection.getContentType().contains("video")) {
+            throw new IOException(String.format(
+                    "Twitch seems to be returning something that isn't video! (%s)",
+                    urlConnection.getContentType()
+            ));
+        }
+
+        try (final InputStream input = new BufferedInputStream(urlConnection.getInputStream())) {
+            try (final OutputStream output = new FileOutputStream(targetFile)) {
+                int readBytes;
+                while ((readBytes = input.read(buffer)) > 0) {
+                    output.write(buffer, 0, readBytes);
+                    totalRead += readBytes;
+                    progressUpdater.consume(totalRead, reportedSize);
+                }
+            }
+        }
+
+        if (totalRead < vs.length) {
+            //Heuristic, if the video is less than 1bps, its probably corrupted/wrong
+            throw new IOException(String.format(
+                    "Invalid file size %d bytes, %d seconds",
+                    totalRead,
+                    vs.length
+            ));
+        }
+
+        logger.debug("{} downloaded!", targetFile);
     }
 
     private void readStatusFile() {
@@ -97,8 +143,12 @@ public class StoredBroadcast {
         }
     }
 
+    private int getBaseProgressPercentage() {
+        return getNumberOfParts() != 0 ? (downloadedParts * PROGRESS_MAX) / getNumberOfParts() : 0;
+    }
+
     private void updateProgressBar() {
-        final int percentage = getNumberOfParts() != 0 ? (downloadedParts * 100) / getNumberOfParts() : 0;
+        final int percentage = getBaseProgressPercentage();
         this.downloadProgress.setValue(percentage);
     }
 
@@ -168,9 +218,10 @@ public class StoredBroadcast {
     }
 
     public void download(final VideoStoreTableView model, final int rowIdx, final int columnIdx) {
-        this.storageFolder.mkdirs();
-
+        final int progressPerPart = PROGRESS_MAX / this.getNumberOfParts();
         final byte buffer[] = new byte[1024 * 64]; //64kB
+
+        this.storageFolder.mkdirs();
 
         logger.info("DOWNLOADING: {}", this.bi);
 
@@ -188,7 +239,23 @@ public class StoredBroadcast {
             if (this.downloadStatus.get(vs.videoFileUrl) == Status.DOWNLOADED && targetFile.exists()) continue;
 
             try {
-                downloadSource(vs, targetFile, buffer);
+                final int baseProgress = this.getBaseProgressPercentage();
+                downloadSource(vs, targetFile, buffer, new BiConsumer<Long, Long>() {
+                    private int lastProgress = Integer.MIN_VALUE;
+
+                    @Override
+                    public void consume(Long first, Long second) {
+                        int newProgress = (int) (baseProgress + (first * progressPerPart / second));
+                        if (newProgress > lastProgress) {
+                            lastProgress = newProgress;
+                            getDownloadProgress().setValue(newProgress);
+                            model.fireTableCellUpdated(
+                                    rowIdx,
+                                    VideoStoreTableView.COLUMNS.DOWNLOAD_PROGRESS.getIdx()
+                            );
+                        }
+                    }
+                });
                 this.downloadStatus.put(vs.videoFileUrl, Status.DOWNLOADED);
                 this.downloadedParts++;
                 model.fireTableCellUpdated(rowIdx, VideoStoreTableView.COLUMNS.DOWNLOADED_PARTS.getIdx());
@@ -205,37 +272,6 @@ public class StoredBroadcast {
             this.updateProgressBar();
             model.fireTableCellUpdated(rowIdx, columnIdx);
         }
-    }
-
-    private void downloadSource(
-            BroadcastInformation.VideoSource vs,
-            File targetFile,
-            byte[] buffer
-    ) throws IOException {
-        targetFile.createNewFile();
-
-        long totalRead = 0;
-        logger.debug("Beginning download of {} to {}", vs.videoFileUrl, targetFile);
-        try (final InputStream input = new BufferedInputStream(new URL(vs.videoFileUrl).openStream())) {
-            try (final OutputStream output = new FileOutputStream(targetFile)) {
-                int readBytes;
-                while ((readBytes = input.read(buffer)) > 0) {
-                    output.write(buffer, 0, readBytes);
-                    totalRead += readBytes;
-                }
-            }
-        }
-
-        if (totalRead < vs.length) {
-            //Heuristic, if the video is less than 1bps, its probably corrupted/wrong
-            throw new IOException(String.format(
-                    "Invalid file size %d bytes, %d seconds",
-                    totalRead,
-                    vs.length
-            ));
-        }
-
-        logger.debug("{} downloaded!", targetFile);
     }
 
     private enum Status {
