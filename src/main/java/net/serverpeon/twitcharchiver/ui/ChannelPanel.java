@@ -39,7 +39,7 @@ class ChannelPanel extends JPanel {
         c.gridy = 2;
         this.add(this.dataLocation, c);
         this.dataLocation.setEditable(false);
-        this.dataLocation.setText(System.getProperty("user.dir"));
+        this.dataLocation.setText("");
         c.gridx = 0;
         this.setLocationButton.setAction(new AbstractAction("Change Directory") {
             @Override
@@ -48,7 +48,12 @@ class ChannelPanel extends JPanel {
                 fc.setAcceptAllFileFilterUsed(false);
                 fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
                 fc.setMultiSelectionEnabled(false);
-                fc.setCurrentDirectory(new File(dataLocation.getText()));
+
+                fc.setCurrentDirectory(
+                        isStorageDirectorySet()
+                                ? getStorageDirectory()
+                                : new File(System.getProperty("user.dir"))
+                );
 
                 final int ret = fc.showDialog(ChannelPanel.this, "Select");
                 if (ret == JFileChooser.APPROVE_OPTION) {
@@ -82,6 +87,10 @@ class ChannelPanel extends JPanel {
     public void setChannelName(final String channelName) {
         this.channelName.setText(channelName);
         setEnabled(channelName != null && !channelName.trim().isEmpty());
+    }
+
+    public boolean isStorageDirectorySet() {
+        return !this.dataLocation.getText().isEmpty();
     }
 
     public void enableProgressBar(final boolean enabled) {

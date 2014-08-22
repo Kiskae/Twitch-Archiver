@@ -76,6 +76,16 @@ public class GUI extends JFrame {
         this.channel = new ChannelPanel(new Runnable() {
             @Override
             public void run() {
+                if (!channel.isStorageDirectorySet()) {
+                    JOptionPane.showMessageDialog(GUI.this,
+                            "Please set the download directory before querying Twitch",
+                            "Please set download directory",
+                            JOptionPane.ERROR_MESSAGE
+                    );
+
+                    return;
+                }
+
                 oauth.setEnabled(false);
                 channel.setEnabled(false);
                 channel.enableProgressBar(true);
