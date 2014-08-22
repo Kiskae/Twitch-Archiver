@@ -4,7 +4,7 @@
 
     <groupId>net.serverpeon</groupId>
     <artifactId>twitch-archiver</artifactId>
-    <version>1.4-SNAPSHOT</version>
+    <version>1.4</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -48,7 +48,7 @@
         <developerConnection>scm:git:git@github.com:Kiskae/Twitch-Archiver.git</developerConnection>
         <connection>scm:git:git@github.com:Kiskae/Twitch-Archiver.git</connection>
         <url>https://github.com/Kiskae/Twitch-Archiver/tree/master/</url>
-      <tag>HEAD</tag>
+      <tag>v1.4</tag>
   </scm>
 
     <build>
