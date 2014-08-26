@@ -56,7 +56,7 @@ public class StoredBroadcast {
         this.storageFolder = new File(rootStorageDirectory, String.format(
                 "%s-%s",
                 bi.broadcastId,
-                bi.title.replaceAll("[^a-zA-Z0-9\\.\\-]", "_") //Strip characters to make safe for filesystem
+                bi.title.replaceAll("[^a-zA-Z0-9\\-]", "_") //Strip characters to make safe for filesystem
         ));
         this.selected = this.storageFolder.exists();
         this.numberOfParts = Iterables.size(this.bi.getSources());
