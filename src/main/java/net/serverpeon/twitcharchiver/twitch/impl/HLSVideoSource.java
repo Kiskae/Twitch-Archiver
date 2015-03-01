@@ -3,7 +3,10 @@ package net.serverpeon.twitcharchiver.twitch.impl;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import net.serverpeon.twitcharchiver.downloader.ForkJoinDownloadTask;
 import net.serverpeon.twitcharchiver.downloader.ProgressTracker;
 import net.serverpeon.twitcharchiver.hls.HLSHandler;
@@ -26,7 +29,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ForkJoinTask;
-import java.util.regex.Pattern;
 
 public class HLSVideoSource implements VideoSource {
     private final static Logger logger = LogManager.getLogger(HLSVideoSource.class);
@@ -44,8 +46,10 @@ public class HLSVideoSource implements VideoSource {
     };
 
     private final HLSPlaylist playlist;
+    private final int mutedCount;
 
-    private HLSVideoSource(final HLSPlaylist playlist) {
+    private HLSVideoSource(final HLSPlaylist playlist, int mutedCount) {
+        this.mutedCount = mutedCount;
         this.playlist = reduce(playlist);
     }
 
@@ -54,8 +58,6 @@ public class HLSVideoSource implements VideoSource {
 
         final List<HLSPlaylist.Video> ret = Lists.newArrayList();
         final Iterator<HLSPlaylist.Video> it = playList.videos.iterator();
-
-        final Pattern pattern = Pattern.compile("\\?(start_offset=[0-9]+)&");
 
         HLSPlaylist.Video firstVideo = it.next();
         HLSPlaylist.Video lastVideo = firstVideo;
@@ -109,10 +111,30 @@ public class HLSVideoSource implements VideoSource {
             final HLSPlaylist playlist = HLSParser.build(playlistUri)
                     .addKeyHandler("EXT-X-TWITCH-TOTAL-SECS", TTV_TOTAL_SECONDS)
                     .parse();
-            return Optional.<VideoSource>of(new HLSVideoSource(playlist));
+            return Optional.<VideoSource>of(new HLSVideoSource(
+                    playlist,
+                    calculateMutedSegments(element.getAsJsonObject())
+            ));
         } else {
             throw new UnrecognizedVodFormatException(PREVIEW_URL);
         }
+    }
+
+    private static int calculateMutedSegments(JsonObject rootObject) {
+        if (!rootObject.has("muted_segments")) return -1;
+
+        final JsonArray array = rootObject.getAsJsonArray("muted_segments");
+
+        int count = 0;
+        for (JsonElement e : array) {
+            final JsonPrimitive value = e.getAsJsonObject().getAsJsonPrimitive("duration");
+            if (value.isNumber()) {
+                //As of this commit, segments are 1 minute long.
+                count += Math.ceil(value.getAsFloat() / 60.f);
+            }
+        }
+
+        return count;
     }
 
     @Override
@@ -129,8 +151,7 @@ public class HLSVideoSource implements VideoSource {
 
     @Override
     public int getNumberOfMutedParts() {
-        //Unknown how to determine
-        return -1;
+        return mutedCount;
     }
 
     @Override
