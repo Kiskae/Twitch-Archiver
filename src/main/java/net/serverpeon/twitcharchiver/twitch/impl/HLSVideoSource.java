@@ -56,67 +56,76 @@ public class HLSVideoSource implements VideoSource {
     private static HLSPlaylist reduce(final HLSPlaylist playList) {
         if (playList.videos.isEmpty()) return playList;
 
-        final List<HLSPlaylist.Video> ret = Lists.newArrayList();
-        final Iterator<HLSPlaylist.Video> it = playList.videos.iterator();
+        try {
+            final List<HLSPlaylist.Video> ret = Lists.newArrayList();
+            final Iterator<HLSPlaylist.Video> it = playList.videos.iterator();
 
-        HLSPlaylist.Video firstVideo = it.next();
-        HLSPlaylist.Video lastVideo = firstVideo;
-        long length = lastVideo.lengthMS;
+            HLSPlaylist.Video firstVideo = it.next();
+            HLSPlaylist.Video lastVideo = firstVideo;
+            long length = lastVideo.lengthMS;
 
-        while (it.hasNext()) {
-            final HLSPlaylist.Video next = it.next();
+            while (it.hasNext()) {
+                final HLSPlaylist.Video next = it.next();
 
-            if (!lastVideo.videoLocation.getPath().equals(next.videoLocation.getPath())) {
-                //Process lastVideo
-                final String startOffset =
-                        firstVideo.videoLocation.getQuery().substring(0, firstVideo.videoLocation.getQuery().indexOf('&'));
+                if (!lastVideo.videoLocation.getPath().equals(next.videoLocation.getPath())) {
+                    //Process lastVideo
+                    final String startOffset =
+                            firstVideo.videoLocation.getQuery().substring(0, firstVideo.videoLocation.getQuery().indexOf('&'));
 
-                final URI uri = UriBuilder.fromUri(lastVideo.videoLocation).replaceQuery(
-                        lastVideo.videoLocation.getQuery().replaceAll("start_offset=[0-9]+", startOffset)
-                ).build();
+                    final URI uri = UriBuilder.fromUri(lastVideo.videoLocation).replaceQuery(
+                            lastVideo.videoLocation.getQuery().replaceAll("start_offset=[0-9]+", startOffset)
+                    ).build();
 
-                ret.add(HLSPlaylist.Video.make(uri, length));
-                length = next.lengthMS;
-                firstVideo = next;
-            } else {
-                length += next.lengthMS;
+                    ret.add(HLSPlaylist.Video.make(uri, length));
+                    length = next.lengthMS;
+                    firstVideo = next;
+                } else {
+                    length += next.lengthMS;
+                }
+
+                lastVideo = next;
             }
+            final String startOffset =
+                    firstVideo.videoLocation.getQuery().substring(0, firstVideo.videoLocation.getQuery().indexOf('&'));
 
-            lastVideo = next;
+            final URI uri = UriBuilder.fromUri(lastVideo.videoLocation).replaceQuery(
+                    lastVideo.videoLocation.getQuery().replaceAll("start_offset=[0-9]+", startOffset)
+            ).build();
+            ret.add(HLSPlaylist.Video.make(uri, length));
+
+            return new HLSPlaylist(ret, playList.properties);
+        } catch (Exception ex) {
+            //If a failure occurs, just skip the reduce step
+            return playList;
         }
-        final String startOffset =
-                firstVideo.videoLocation.getQuery().substring(0, firstVideo.videoLocation.getQuery().indexOf('&'));
-
-        final URI uri = UriBuilder.fromUri(lastVideo.videoLocation).replaceQuery(
-                lastVideo.videoLocation.getQuery().replaceAll("start_offset=[0-9]+", startOffset)
-        ).build();
-        ret.add(HLSPlaylist.Video.make(uri, length));
-
-        return new HLSPlaylist(ret, playList.properties);
     }
 
     public static Optional<VideoSource> parse(final JsonElement element) {
-        final String PREVIEW_URL = element.getAsJsonObject().getAsJsonPrimitive("preview").getAsString();
+        try {
+            final String PREVIEW_URL = element.getAsJsonObject().getAsJsonPrimitive("preview").getAsString();
 
-        //                           v                                                        v
-        //http://static-cdn.jtvnw.net/v1/AUTH_system/vods_9024/shaboozey_13264185568_208329733/thumb/thumb0-30x240.jpg
-        final String MYSTERY_SEGMENT = URI.create(PREVIEW_URL).resolve("..").getPath();
+            //                           v                                                        v
+            //http://static-cdn.jtvnw.net/v1/AUTH_system/vods_9024/shaboozey_13264185568_208329733/thumb/thumb0-30x240.jpg
+            final String MYSTERY_SEGMENT = URI.create(PREVIEW_URL).resolve("..").getPath();
 
-        //Since this is a large hack, we verify it looks as we expect.
-        if (MYSTERY_SEGMENT.startsWith("/v1/AUTH_system/")
-                && MYSTERY_SEGMENT.endsWith("/")
-                && PREVIEW_URL.contains("/thumb/")) {
-            final URI playlistUri = TTV_VOD_CDN.resolve(MYSTERY_SEGMENT).resolve("chunked/index-dvr.m3u8");
-            logger.debug("Loading HLS playlist from: {}", playlistUri);
-            final HLSPlaylist playlist = HLSParser.build(playlistUri)
-                    .addKeyHandler("EXT-X-TWITCH-TOTAL-SECS", TTV_TOTAL_SECONDS)
-                    .parse();
-            return Optional.<VideoSource>of(new HLSVideoSource(
-                    playlist,
-                    calculateMutedSegments(element.getAsJsonObject())
-            ));
-        } else {
-            throw new UnrecognizedVodFormatException(PREVIEW_URL);
+            //Since this is a large hack, we verify it looks as we expect.
+            if (MYSTERY_SEGMENT.startsWith("/v1/AUTH_system/")
+                    && MYSTERY_SEGMENT.endsWith("/")
+                    && PREVIEW_URL.contains("/thumb/")) {
+                final URI playlistUri = TTV_VOD_CDN.resolve(MYSTERY_SEGMENT).resolve("chunked/index-dvr.m3u8");
+                logger.debug("Loading HLS playlist from: {}", playlistUri);
+                final HLSPlaylist playlist = HLSParser.build(playlistUri)
+                        .addKeyHandler("EXT-X-TWITCH-TOTAL-SECS", TTV_TOTAL_SECONDS)
+                        .parse();
+                return Optional.<VideoSource>of(new HLSVideoSource(
+                        playlist,
+                        calculateMutedSegments(element.getAsJsonObject())
+                ));
+            } else {
+                throw new UnrecognizedVodFormatException(PREVIEW_URL);
+            }
+        } catch (Exception ex) {
+            throw new UnrecognizedVodFormatException(ex);
         }
     }
 
