@@ -1,14 +1,13 @@
 package net.serverpeon.twitcharchiver.twitch;
 
-import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Iterators;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import net.serverpeon.twitcharchiver.twitch.impl.HLSVideoSource;
+import net.serverpeon.twitcharchiver.twitch.impl.LegacyVideoSource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.joda.time.DateTime;
@@ -19,7 +18,6 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.Iterator;
-import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
@@ -30,7 +28,7 @@ import java.util.NoSuchElementException;
  * GET /channels/:channel/videos - To retrieve a list of all past broadcasts.
  * <br>
  * GET api.justin.tv/api/broadcast/by_archive/:broadcast_id.json - To retrieve the background-information of the VOD
- * * This one is probably deprecated and not well documents.
+ * * This one is probably deprecated and not well documented.
  *
  * @author Kiskae
  * @see <a href="https://github.com/justintv/Twitch-API">Twitch API documentation</a>
@@ -220,36 +218,13 @@ public class TwitchApi {
         final String broadcastId = obj.get("_id").getAsString();
         final DateTime recorded_at = DateTime.parse(obj.get("recorded_at").getAsString());
 
-        final List<BroadcastInformation.VideoSource> sources = FluentIterable
-                .from(getInternalVideoInformation(broadcastId, oAuthToken))
-                .transform(new Function<JsonElement, JsonObject>() {
-                    @Override
-                    public JsonObject apply(JsonElement jsonElement) {
-                        return jsonElement.getAsJsonObject();
-                    }
-                })
-                .transform(new Function<JsonObject, BroadcastInformation.VideoSource>() {
-                    @Override
-                    public BroadcastInformation.VideoSource apply(final JsonObject obj) {
-                        final String video_file_url = obj.get("url").getAsString();
-                        final int length = obj.get("length").getAsInt();
+        final Optional<VideoSource> source = getVideoSource(broadcastId, oAuthToken);
 
-                        final JsonElement upkeep = obj.get("upkeep");
-                        final boolean muted = upkeep.isJsonPrimitive() && upkeep.getAsString().equals("fail");
-
-                        return new BroadcastInformation.VideoSource(
-                                video_file_url,
-                                length,
-                                muted
-                        );
-                    }
-                }).toList();
-
-        if (sources.isEmpty()) throw new SubscriberOnlyException();
-        return new BroadcastInformation(title, views, length, broadcastId, sources, recorded_at);
+        if (!source.isPresent()) throw new SubscriberOnlyException();
+        return new BroadcastInformation(title, views, length, broadcastId, source.get(), recorded_at);
     }
 
-    private static JsonArray getInternalVideoInformation(final String broadcastId, final String oAuthToken) {
+    private static Optional<VideoSource> getVideoSource(final String broadcastId, final String oAuthToken) {
         final Response response = TWITCH_API_INTERNAL
                 .path("videos")
                 .path(broadcastId)
@@ -261,11 +236,17 @@ public class TwitchApi {
         if (response.getStatus() != 200) {
             throw new TwitchApiException(response);
         } else {
-            final JsonParser parser = new JsonParser();
-            return parser.parse(response.readEntity(String.class))
-                    .getAsJsonObject()
-                    .getAsJsonObject("chunks")
-                    .getAsJsonArray("live");
+            final JsonElement result = new JsonParser().parse(response.readEntity(String.class));
+            if (broadcastId.startsWith("b")) {
+                //Old style video storage
+                return LegacyVideoSource.parse(result);
+            } else if (broadcastId.startsWith("v")) {
+                //HLS style video storage
+                return HLSVideoSource.parse(result);
+            } else {
+                //Unrecognized video storage
+                throw new UnrecognizedVodFormatException(response.getLocation().toString());
+            }
         }
     }
 }

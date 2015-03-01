@@ -44,13 +44,7 @@ public class VideoStore {
                 logger.warn(new ParameterizedMessage("Failure to get {}", videoInfo), ex);
             }
 
-            //if (++requestCount <= 15) {
             Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
-            //} else {
-            //    logger.debug("Beginning rate-limit delay.");
-            //    Uninterruptibles.sleepUninterruptibly(1, TimeUnit.MINUTES);
-            //    requestCount = 0;
-            //}
         }
     }
 

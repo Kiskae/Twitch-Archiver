@@ -1,6 +1,7 @@
 package net.serverpeon.twitcharchiver.twitch;
 
 import com.google.common.base.Objects;
+import com.google.common.collect.Lists;
 import org.joda.time.DateTime;
 
 import java.util.List;
@@ -11,18 +12,20 @@ public class BroadcastInformation {
     public final int views;
     public final String broadcastId;
     private final int length;
-    private final List<VideoSource> sourceList;
+    private final List<VideoSource> sourceList = Lists.newArrayList();
+    private final net.serverpeon.twitcharchiver.twitch.VideoSource source;
     private final DateTime recordedAt;
 
     BroadcastInformation(final String title, final int views, final int length,
-                         final String broadcastId, final List<VideoSource> sourceList,
+                         final String broadcastId, final net.serverpeon.twitcharchiver.twitch.VideoSource source,
                          final DateTime recordedAt
     ) {
         this.title = title;
         this.views = views;
         this.length = length;
         this.broadcastId = broadcastId;
-        this.sourceList = sourceList;
+        this.source = source;
+        //this.sourceList = sourceList;
         this.recordedAt = recordedAt;
     }
 
@@ -34,8 +37,13 @@ public class BroadcastInformation {
         return this.views;
     }
 
+    @Deprecated
     public Iterable<VideoSource> getSources() {
         return this.sourceList;
+    }
+
+    public net.serverpeon.twitcharchiver.twitch.VideoSource getSource() {
+        return this.source;
     }
 
     public DateTime getRecordedDate() {
@@ -50,7 +58,6 @@ public class BroadcastInformation {
         BroadcastInformation that = (BroadcastInformation) o;
 
         return broadcastId.equals(that.broadcastId);
-
     }
 
     @Override
@@ -70,6 +77,7 @@ public class BroadcastInformation {
                 .toString();
     }
 
+    @Deprecated
     public static class VideoSource {
         public final String videoFileUrl;
         public final int length; //seconds
