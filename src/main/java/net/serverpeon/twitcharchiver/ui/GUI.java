@@ -159,7 +159,7 @@ public class GUI extends JFrame {
                     vp.setEnabled(false);
                     download.setProcessing(true);
 
-                    new VideoStoreDownloader(vs, new Runnable() {
+                    executors.execute(new VideoStoreDownloader(vs, new Runnable() {
                         @Override
                         public void run() {
                             oauth.setEnabled(true);
@@ -174,7 +174,7 @@ public class GUI extends JFrame {
                                     JOptionPane.INFORMATION_MESSAGE
                             );
                         }
-                    }, download.getNumberOfProcesses()).start();
+                    }, download.getNumberOfProcesses()));
                 }
             }
         });
