@@ -2,7 +2,6 @@ package net.serverpeon.twitcharchiver.downloader;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Maps;
-import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.logging.log4j.LogManager;
@@ -78,6 +77,12 @@ public class ProgressTracker {
         DOWNLOADED
     }
 
+    public interface ProgressUpdater {
+        void updateProgress(long soFar, long expectedTotal);
+
+        void updateCount(Status type);
+    }
+
     public class Partial {
         private final String identifier;
         private final ProgressUpdater updater;
@@ -114,11 +119,5 @@ public class ProgressTracker {
                 writeLock.unlock();
             }
         }
-    }
-
-    public interface ProgressUpdater {
-        void updateProgress(long soFar, long expectedTotal);
-
-        void updateCount(Status type);
     }
 }

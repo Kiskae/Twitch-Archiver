@@ -85,6 +85,18 @@ public class LegacyVideoSource implements VideoSource {
         }).size();
     }
 
+    private static class VideoPart {
+        public final String videoFileUrl;
+        public final int length; //seconds
+        public final boolean muted;
+
+        public VideoPart(final String video_file_url, final int length, final boolean muted) {
+            this.videoFileUrl = video_file_url;
+            this.length = length;
+            this.muted = muted;
+        }
+    }
+
     private class LegacyDownloader implements Runnable {
         private final File targetFolder;
         private final ProgressTracker progressTracker;
@@ -178,18 +190,6 @@ public class LegacyVideoSource implements VideoSource {
                 dest.delete();
                 tracker.invalidate();
             }
-        }
-    }
-
-    private static class VideoPart {
-        public final String videoFileUrl;
-        public final int length; //seconds
-        public final boolean muted;
-
-        public VideoPart(final String video_file_url, final int length, final boolean muted) {
-            this.videoFileUrl = video_file_url;
-            this.length = length;
-            this.muted = muted;
         }
     }
 }

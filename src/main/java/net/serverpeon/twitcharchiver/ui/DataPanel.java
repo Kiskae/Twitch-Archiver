@@ -14,6 +14,7 @@ import java.awt.event.ActionEvent;
 
 class DataPanel extends JPanel {
     private final JTable table = new JTable();
+    private Predicate<Boolean> selectedProcessor = Predicates.alwaysTrue();
     private final JButton selectAll = new JButton(new AbstractAction("Select All") {
         @Override
         public void actionPerformed(ActionEvent e) {
@@ -26,7 +27,6 @@ class DataPanel extends JPanel {
             selectedProcessor.apply(false);
         }
     });
-    private Predicate<Boolean> selectedProcessor = Predicates.alwaysTrue();
 
     public DataPanel() {
         this.setLayout(new BorderLayout());

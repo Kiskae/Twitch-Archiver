@@ -6,12 +6,8 @@ import com.google.common.collect.Maps;
 import java.util.Map;
 
 public class HLSHandler {
-    private static final Map<String, KeyHandler> DEFAULT_HANDLERS;
-    private final Map<String, KeyHandler> handlers;
-
     public final static String EXTINF_KEY = "EXTINF";
     public final static String EVENT_ENDED = "EXT-X-ENDLIST";
-
     static {
         DEFAULT_HANDLERS = ImmutableMap
                 .<String, KeyHandler>builder()
@@ -46,6 +42,8 @@ public class HLSHandler {
                     }
                 }).build();
     }
+    private static final Map<String, KeyHandler> DEFAULT_HANDLERS;
+    private final Map<String, KeyHandler> handlers;
 
     public HLSHandler() {
         handlers = Maps.newHashMap(DEFAULT_HANDLERS);
