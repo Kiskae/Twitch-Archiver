@@ -238,7 +238,7 @@ public class TwitchApi {
             throw new TwitchApiException(response);
         } else {
             final JsonElement result = new JsonParser().parse(response.readEntity(String.class));
-            if (broadcastId.startsWith("b")) {
+            if (broadcastId.startsWith("a")) {
                 //Old style video storage
                 return LegacyVideoSource.parse(result);
             } else if (broadcastId.startsWith("v")) {
