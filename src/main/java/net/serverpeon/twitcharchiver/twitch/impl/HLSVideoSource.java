@@ -7,13 +7,12 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import net.serverpeon.twitcharchiver.downloader.ForkJoinDownloadTask;
 import net.serverpeon.twitcharchiver.downloader.ProgressTracker;
+import net.serverpeon.twitcharchiver.downloader.VideoSource;
 import net.serverpeon.twitcharchiver.hls.HLSHandler;
 import net.serverpeon.twitcharchiver.hls.HLSParser;
 import net.serverpeon.twitcharchiver.hls.HLSPlaylist;
 import net.serverpeon.twitcharchiver.twitch.UnrecognizedVodFormatException;
-import net.serverpeon.twitcharchiver.twitch.VideoSource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.ParameterizedMessage;
@@ -164,11 +163,11 @@ public class HLSVideoSource implements VideoSource {
     }
 
     @Override
-    public ForkJoinDownloadTask createDownloadTask(File targetFolder, ProgressTracker tracker) {
+    public Runnable createDownloadTask(File targetFolder, ProgressTracker tracker) {
         return new HLSDownloader(targetFolder, tracker);
     }
 
-    private class HLSDownloader extends ForkJoinDownloadTask {
+    private class HLSDownloader implements Runnable {
         private final File targetFolder;
         private final ProgressTracker tracker;
 
@@ -178,7 +177,7 @@ public class HLSVideoSource implements VideoSource {
         }
 
         @Override
-        protected void run() {
+        public void run() {
             if (playlist.properties.get(HLSHandler.EVENT_ENDED) != Boolean.TRUE) {
                 return;
             }
@@ -230,7 +229,7 @@ public class HLSVideoSource implements VideoSource {
         }
     }
 
-    private class HLSPartDownloader extends ForkJoinDownloadTask {
+    private class HLSPartDownloader implements Runnable {
         private final File dest;
         private final HLSPlaylist.Video video;
         private final ProgressTracker.Partial tracker;
@@ -242,7 +241,7 @@ public class HLSVideoSource implements VideoSource {
         }
 
         @Override
-        protected void run() {
+        public void run() {
             final byte buffer[] = new byte[1024 * 64]; //64kB
 
             try {

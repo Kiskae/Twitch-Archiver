@@ -13,11 +13,11 @@ public class BroadcastInformation {
     public final String broadcastId;
     private final int length;
     private final List<VideoSource> sourceList = Lists.newArrayList();
-    private final net.serverpeon.twitcharchiver.twitch.VideoSource source;
+    private final net.serverpeon.twitcharchiver.downloader.VideoSource source;
     private final DateTime recordedAt;
 
     BroadcastInformation(final String title, final int views, final int length,
-                         final String broadcastId, final net.serverpeon.twitcharchiver.twitch.VideoSource source,
+                         final String broadcastId, final net.serverpeon.twitcharchiver.downloader.VideoSource source,
                          final DateTime recordedAt
     ) {
         this.title = title;
@@ -42,7 +42,7 @@ public class BroadcastInformation {
         return this.sourceList;
     }
 
-    public net.serverpeon.twitcharchiver.twitch.VideoSource getSource() {
+    public net.serverpeon.twitcharchiver.downloader.VideoSource getSource() {
         return this.source;
     }
 

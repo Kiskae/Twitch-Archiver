@@ -119,7 +119,7 @@ public class StoredBroadcast {
         return this.downloadProgress;
     }
 
-    public ForkJoinDownloadTask getDownloadTask(final VideoStoreTableView model, final int rowIdx) {
+    public Runnable getDownloadTask(final VideoStoreTableView model, final int rowIdx) {
         try {
             Files.createDirectories(this.storageFolder.toPath());
             final ProgressTracker.ProgressUpdater tracker = new ProgressTracker.ProgressUpdater() {

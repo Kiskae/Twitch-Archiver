@@ -6,6 +6,7 @@ import com.google.common.collect.Iterators;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import net.serverpeon.twitcharchiver.downloader.VideoSource;
 import net.serverpeon.twitcharchiver.twitch.impl.HLSVideoSource;
 import net.serverpeon.twitcharchiver.twitch.impl.LegacyVideoSource;
 import org.apache.logging.log4j.LogManager;

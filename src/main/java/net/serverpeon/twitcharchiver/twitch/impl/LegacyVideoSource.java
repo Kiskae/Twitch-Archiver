@@ -9,9 +9,8 @@ import com.google.common.collect.Lists;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import net.serverpeon.twitcharchiver.downloader.ForkJoinDownloadTask;
 import net.serverpeon.twitcharchiver.downloader.ProgressTracker;
-import net.serverpeon.twitcharchiver.twitch.VideoSource;
+import net.serverpeon.twitcharchiver.downloader.VideoSource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.ParameterizedMessage;
@@ -67,7 +66,7 @@ public class LegacyVideoSource implements VideoSource {
     }
 
     @Override
-    public ForkJoinDownloadTask createDownloadTask(File targetFolder, ProgressTracker progressTracker) {
+    public Runnable createDownloadTask(File targetFolder, ProgressTracker progressTracker) {
         return new LegacyDownloader(targetFolder, progressTracker);
     }
 
@@ -86,7 +85,7 @@ public class LegacyVideoSource implements VideoSource {
         }).size();
     }
 
-    private class LegacyDownloader extends ForkJoinDownloadTask {
+    private class LegacyDownloader implements Runnable {
         private final File targetFolder;
         private final ProgressTracker progressTracker;
 
@@ -96,7 +95,6 @@ public class LegacyVideoSource implements VideoSource {
         }
 
         @Override
-        protected void run() {
             final List<LegacyPartDownloader> parts = Lists.newArrayList();
 
             int cursor = 0;
@@ -109,6 +107,7 @@ public class LegacyVideoSource implements VideoSource {
                                 com.google.common.io.Files.getFileExtension(v.videoFileUrl)
                         )
                 );
+        public void run() {
 
                 if (progressTracker.getStatus(v.videoFileUrl) == ProgressTracker.Status.DOWNLOADED
                         && targetFile.exists()) continue;
@@ -120,7 +119,7 @@ public class LegacyVideoSource implements VideoSource {
         }
     }
 
-    private class LegacyPartDownloader extends ForkJoinDownloadTask {
+    private class LegacyPartDownloader implements Runnable {
         private final File dest;
         private final VideoPart video;
         private final ProgressTracker.Partial tracker;
@@ -132,7 +131,7 @@ public class LegacyVideoSource implements VideoSource {
         }
 
         @Override
-        protected void run() {
+        public void run() {
             final byte buffer[] = new byte[1024 * 64]; //64kB
 
             try {
