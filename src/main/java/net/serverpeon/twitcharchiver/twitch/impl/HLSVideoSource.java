@@ -1,5 +1,6 @@
 package net.serverpeon.twitcharchiver.twitch.impl;
 
+import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
@@ -8,6 +9,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import net.serverpeon.twitcharchiver.downloader.ProgressTracker;
+import net.serverpeon.twitcharchiver.downloader.UriFileMapping;
 import net.serverpeon.twitcharchiver.downloader.VideoSource;
 import net.serverpeon.twitcharchiver.hls.HLSHandler;
 import net.serverpeon.twitcharchiver.hls.HLSParser;
@@ -23,7 +25,6 @@ import java.io.*;
 import java.net.URI;
 import java.net.URLConnection;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -182,47 +183,32 @@ public class HLSVideoSource implements VideoSource {
                 return;
             }
 
-            final List<HLSPartDownloader> downloaders = Lists.newLinkedList();
-            int cursor = 0;
-            for (final HLSPlaylist.Video v : playlist.videos) {
-                final File targetFile = new File(
-                        this.targetFolder,
-                        String.format(
-                                "part%d.%s",
-                                ++cursor,
-                                com.google.common.io.Files.getFileExtension(v.videoLocation.getPath())
-                        )
-                );
+            final UriFileMapping<HLSPlaylist.Video> fileMapping = new UriFileMapping<>(
+                    playlist.videos,
+                    new Function<HLSPlaylist.Video, URI>() {
+                        @Override
+                        public URI apply(HLSPlaylist.Video video) {
+                            return video.videoLocation;
+                        }
+                    },
+                    this.targetFolder
+            );
 
-                if (tracker.getStatus(v.videoLocation.toString()) == ProgressTracker.Status.DOWNLOADED
-                        && targetFile.exists()) continue;
-
-                downloaders.add(new HLSPartDownloader(targetFile, v, tracker.track(v.videoLocation.toString())));
-            }
+            final List<ForkJoinTask<?>> downloaders = fileMapping.generateTasks(tracker, new Function<UriFileMapping<net.serverpeon.twitcharchiver.hls.HLSPlaylist.Video>.UriFileEntry, ForkJoinTask<?>>() {
+                @Override
+                public ForkJoinTask<?> apply(UriFileMapping<HLSPlaylist.Video>.UriFileEntry entry) {
+                    return ForkJoinTask.adapt(new HLSPartDownloader(
+                            entry.target,
+                            entry.source,
+                            tracker.track(entry.getURI().toString())
+                    ));
+                }
+            });
 
             ForkJoinTask.invokeAll(downloaders);
 
             try (final PrintWriter pw = new PrintWriter(new FileWriter(new File(targetFolder, "ffmpeg-concat.txt")))) {
-                cursor = 0;
-                for (final HLSPlaylist.Video v : playlist.videos) {
-                    final File targetFile = new File(
-                            this.targetFolder,
-                            String.format(
-                                    "part%d.%s",
-                                    ++cursor,
-                                    com.google.common.io.Files.getFileExtension(v.videoLocation.getPath())
-                            )
-                    );
-
-                    final Path relativePath = targetFolder.toPath().relativize(targetFile.toPath());
-
-                    if (tracker.getStatus(v.videoLocation.toString()) == ProgressTracker.Status.DOWNLOADED
-                            && targetFile.exists()) {
-                        pw.printf("file '%s'%n", relativePath);
-                    } else {
-                        pw.printf("# Missing file '%s'%n", relativePath);
-                    }
-                }
+                fileMapping.generateConcatFile(pw, targetFolder.toPath(), tracker);
             } catch (IOException e) {
                 logger.warn("Failed to save ffmpeg concat file.", e);
             }

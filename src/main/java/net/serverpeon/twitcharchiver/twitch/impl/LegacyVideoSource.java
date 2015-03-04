@@ -5,17 +5,18 @@ import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.serverpeon.twitcharchiver.downloader.ProgressTracker;
+import net.serverpeon.twitcharchiver.downloader.UriFileMapping;
 import net.serverpeon.twitcharchiver.downloader.VideoSource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.ParameterizedMessage;
 
 import java.io.*;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
@@ -107,27 +108,32 @@ public class LegacyVideoSource implements VideoSource {
         }
 
         @Override
-            final List<LegacyPartDownloader> parts = Lists.newArrayList();
-
-            int cursor = 0;
-            for (VideoPart v : LegacyVideoSource.this.parts) {
-                final File targetFile = new File(
-                        this.targetFolder,
-                        String.format(
-                                "part%d.%s",
-                                ++cursor,
-                                com.google.common.io.Files.getFileExtension(v.videoFileUrl)
-                        )
-                );
         public void run() {
+            final UriFileMapping<VideoPart> fileMappings = new UriFileMapping<>(parts, new Function<VideoPart, URI>() {
+                @Override
+                public URI apply(VideoPart videoPart) {
+                    return URI.create(videoPart.videoFileUrl);
+                }
+            }, this.targetFolder);
 
-                if (progressTracker.getStatus(v.videoFileUrl) == ProgressTracker.Status.DOWNLOADED
-                        && targetFile.exists()) continue;
+            final List<ForkJoinTask<?>> downloaders = fileMappings.generateTasks(progressTracker, new Function<UriFileMapping<VideoPart>.UriFileEntry, ForkJoinTask<?>>() {
+                @Override
+                public ForkJoinTask<?> apply(UriFileMapping<VideoPart>.UriFileEntry entry) {
+                    return ForkJoinTask.adapt(new LegacyPartDownloader(
+                            entry.target,
+                            entry.source,
+                            progressTracker.track(entry.getURI().toString())
+                    ));
+                }
+            });
 
-                parts.add(new LegacyPartDownloader(targetFile, v, progressTracker.track(v.videoFileUrl)));
+            ForkJoinTask.invokeAll(downloaders);
+
+            try (final PrintWriter pw = new PrintWriter(new FileWriter(new File(targetFolder, "ffmpeg-concat.txt")))) {
+                fileMappings.generateConcatFile(pw, targetFolder.toPath(), progressTracker);
+            } catch (IOException e) {
+                logger.warn("Failed to save ffmpeg concat file.", e);
             }
-
-            ForkJoinTask.invokeAll(parts);
         }
     }
 
