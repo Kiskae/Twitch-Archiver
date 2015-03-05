@@ -6,6 +6,7 @@ import net.serverpeon.twitcharchiver.downloader.VideoStoreDownloader;
 import net.serverpeon.twitcharchiver.twitch.InvalidOAuthTokenException;
 import net.serverpeon.twitcharchiver.twitch.SubscriberOnlyException;
 import net.serverpeon.twitcharchiver.twitch.TwitchApi;
+import net.serverpeon.twitcharchiver.twitch.UnrecognizedVodFormatException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -134,6 +135,9 @@ public class GUI extends JFrame {
                                             JOptionPane.ERROR_MESSAGE);
                                 }
                             });
+                        } catch (UnrecognizedVodFormatException ex) {
+                            r.run();
+                            logger.error("Exception during VoD retrieval.", ex);
                         }
                     }
                 });
