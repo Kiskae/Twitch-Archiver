@@ -1,6 +1,8 @@
 package net.serverpeon.twitcharchiver.hls;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.logging.log4j.message.ParameterizedMessage;
@@ -11,7 +13,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.InputStream;
 import java.net.URI;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -62,14 +63,13 @@ public class HLSParser {
                 final String[] codecs = (String[]) state.remove(HLSHandler.PLAYLIST_STREAM_INF + "-CODECS");
 
                 //Clean up playlist-specific values.
-                final Iterator<Map.Entry<String, Object>> it = state.entrySet().iterator();
-                while (it.hasNext()) {
-                    final Map.Entry<String, Object> entry = it.next();
-                    if (entry.getKey().startsWith(HLSHandler.PLAYLIST_MEDIA)
-                            || entry.getKey().startsWith(HLSHandler.PLAYLIST_STREAM_INF)) {
-                        it.remove();
+                Iterables.removeIf(state.keySet(), new Predicate<String>() {
+                    @Override
+                    public boolean apply(String key) {
+                        return key.startsWith(HLSHandler.PLAYLIST_MEDIA)
+                                || key.startsWith(HLSHandler.PLAYLIST_STREAM_INF);
                     }
-                }
+                });
 
                 return HLSPlaylist.Source.make(videoType, bandwidth, codecs, location);
             }

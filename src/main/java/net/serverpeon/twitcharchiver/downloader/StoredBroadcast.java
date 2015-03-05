@@ -48,16 +48,14 @@ public class StoredBroadcast {
                 bi.broadcastId,
                 bi.title.replaceAll("[^a-zA-Z0-9\\-]", "_") //Strip characters to make safe for filesystem
         ));
-        this.tracker = new ProgressTracker(storageFolder);
         this.selected = this.storageFolder.exists();
         this.numberOfParts = this.bi.getSource().getNumberOfParts();
-        this.downloadProgress.setValue(calculateTemporaryPercentage());
+        this.tracker = new ProgressTracker(storageFolder, this.numberOfParts);
+        this.updateProgress(getDownloadedParts(), getNumberOfParts());
     }
 
-    private int calculateTemporaryPercentage() {
-        return numberOfParts != 0
-                ? tracker.getStatusCount(ProgressTracker.Status.DOWNLOADED) * PROGRESS_MAX / numberOfParts
-                : 0;
+    private void updateProgress(int counter, int total) {
+        this.downloadProgress.setValue(counter * PROGRESS_MAX / total);
     }
 
     public int getDownloadedParts() {
@@ -125,23 +123,25 @@ public class StoredBroadcast {
             final ProgressTracker.ProgressUpdater tracker = new ProgressTracker.ProgressUpdater() {
 
                 @Override
-                public void updateProgress(long soFar, long expectedTotal) {
-
+                public void updateProgress(int counter, int total) {
+                    StoredBroadcast.this.updateProgress(counter, total);
+                    model.fireTableCellUpdated(rowIdx, VideoStoreTableView.COLUMNS.DOWNLOAD_PROGRESS.getIdx());
                 }
 
                 @Override
                 public void updateCount(ProgressTracker.Status type) {
                     switch (type) {
                         case DOWNLOADED:
-                            downloadProgress.setValue(calculateTemporaryPercentage());
                             model.fireTableCellUpdated(rowIdx, VideoStoreTableView.COLUMNS.DOWNLOADED_PARTS.getIdx());
+                            break;
                         case FAILED:
                             model.fireTableCellUpdated(rowIdx, VideoStoreTableView.COLUMNS.FAILED_PARTS.getIdx());
+                            break;
                     }
-                    model.fireTableCellUpdated(rowIdx, VideoStoreTableView.COLUMNS.DOWNLOAD_PROGRESS.getIdx());
                 }
             };
-            this.tracker.setUpdater(tracker);
+
+            this.tracker.reset(tracker);
             return this.bi.getSource().createDownloadTask(storageFolder, this.tracker);
         } catch (IOException e) {
             throw Throwables.propagate(e);
