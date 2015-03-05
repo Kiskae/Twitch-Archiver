@@ -39,7 +39,6 @@ import static com.google.common.base.Preconditions.checkState;
 public class HLSVideoSource implements VideoSource {
     private final static Logger logger = LogManager.getLogger(HLSVideoSource.class);
 
-    private static final URI TTV_VOD_CDN = URI.create("http://vod.ak.hls.ttvnw.net/");
     private static final HLSHandler.KeyHandler TTV_TOTAL_SECONDS = new HLSHandler.KeyHandler() {
         @Override
         public void handle(String[] values, Map<String, Object> result) {
