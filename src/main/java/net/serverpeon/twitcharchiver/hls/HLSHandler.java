@@ -72,7 +72,7 @@ public class HLSHandler {
                                 default:
                                     result.put(
                                             PLAYLIST_MEDIA + "-" + split[0],
-                                            split.length == 2 ? split[1] : null
+                                            split.length == 2 ? unquote(split[1], '"') : null
                                     );
                                     break;
                             }
