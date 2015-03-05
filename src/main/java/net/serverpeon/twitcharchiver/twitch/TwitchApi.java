@@ -2,11 +2,14 @@ package net.serverpeon.twitcharchiver.twitch;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Iterators;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.serverpeon.twitcharchiver.downloader.VideoSource;
+import net.serverpeon.twitcharchiver.hls.HLSParser;
+import net.serverpeon.twitcharchiver.hls.HLSPlaylist;
 import net.serverpeon.twitcharchiver.twitch.impl.HLSVideoSource;
 import net.serverpeon.twitcharchiver.twitch.impl.LegacyVideoSource;
 import org.apache.logging.log4j.LogManager;
@@ -18,6 +21,9 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URLEncoder;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -40,13 +46,15 @@ public class TwitchApi {
     private final static MediaType APPLICATION_TWITCH_JSON = new MediaType("application", "vnd.twitchtv.v3+json");
     private final static String TWITCH_OAUTH_URL_PARAM = "oauth_token";
     private final static WebTarget TWITCH_API_KRAKEN;
-    private final static WebTarget TWITCH_API_INTERNAL;
+    private final static WebTarget TWITCH_API_INTERNAL_API;
+    private final static WebTarget TWITCH_API_INTERNAL_USHER;
     private final static int PAST_BROADCASTS_MAX_LIMIT = 100;
 
     static {
         final Client client = ClientBuilder.newClient();
         TWITCH_API_KRAKEN = client.target("https://api.twitch.tv").path("kraken");
-        TWITCH_API_INTERNAL = client.target("https://api.twitch.tv").path("api");
+        TWITCH_API_INTERNAL_API = client.target("https://api.twitch.tv").path("api");
+        TWITCH_API_INTERNAL_USHER = client.target("http://usher.twitch.tv");
     }
 
     /**
@@ -173,11 +181,6 @@ public class TwitchApi {
         }
     }
 
-    /**
-     * @param channelName
-     * @param limit
-     * @return
-     */
     public static Iterator<JsonElement> getLimitedPastBroadcastsForChannel(final String channelName, final String oAuthToken, final int limit) {
         Preconditions.checkNotNull(channelName, "Channel name cannot be NULL");
         Preconditions.checkArgument(limit > 0, "Limit needs to be larger than 0");
@@ -205,10 +208,6 @@ public class TwitchApi {
         }
     }
 
-    /**
-     * @param broadcastData
-     * @return
-     */
     public static BroadcastInformation getBroadcastInformation(final JsonElement broadcastData, final String oAuthToken) {
         Preconditions.checkNotNull(broadcastData, "Data cannot be NULL");
 
@@ -226,11 +225,11 @@ public class TwitchApi {
     }
 
     private static Optional<VideoSource> getVideoSource(final String broadcastId, final String oAuthToken) {
-        final Response response = TWITCH_API_INTERNAL
+        final Response response = TWITCH_API_INTERNAL_API
                 .path("videos")
                 .path(broadcastId)
                 .queryParam(TWITCH_OAUTH_URL_PARAM, oAuthToken)
-                .request(APPLICATION_TWITCH_JSON)
+                .request(MediaType.APPLICATION_JSON_TYPE)
                 .get();
 
         logger.debug("getInternalVideoInformation: {}", broadcastId);
@@ -243,11 +242,50 @@ public class TwitchApi {
                 return LegacyVideoSource.parse(result);
             } else if (broadcastId.startsWith("v")) {
                 //HLS style video storage
-                return HLSVideoSource.parse(result);
+                return HLSVideoSource.parse(result, oAuthToken);
             } else {
                 //Unrecognized video storage
                 throw new UnrecognizedVodFormatException(response.getLocation().toString());
             }
+        }
+    }
+
+    public static HLSPlaylist<HLSPlaylist.PlayList> getVodPlaylist(final String broadcastId, final String oAuthToken) {
+        final Response response = TWITCH_API_INTERNAL_API
+                .path("vods")
+                .path(broadcastId)
+                .path("access_token")
+                .queryParam(TWITCH_OAUTH_URL_PARAM, oAuthToken)
+                .request(MediaType.APPLICATION_JSON_TYPE)
+                .get();
+
+        logger.debug("getVodPlaylist: {}", broadcastId);
+        if (response.getStatus() != 200) {
+            throw new TwitchApiException(response);
+        } else {
+            final JsonObject result = new JsonParser().parse(response.readEntity(String.class)).getAsJsonObject();
+            return retrieveHLSPlaylist(broadcastId, result.get("token").getAsString(), result.get("sig").getAsString());
+        }
+    }
+
+    private static HLSPlaylist<HLSPlaylist.PlayList> retrieveHLSPlaylist(
+            final String broadcastId,
+            final String auth,
+            final String token
+    ) {
+        try {
+            final URI playlistURI = TWITCH_API_INTERNAL_USHER
+                    .path("vod")
+                    .path(broadcastId)
+                    .queryParam("nauth", URLEncoder.encode(auth, "UTF-8"))
+                    .queryParam("nauthsig", URLEncoder.encode(token, "UTF-8"))
+                    .getUri();
+
+            logger.debug("HLS Playlist source: {}", playlistURI);
+
+            return HLSParser.build(playlistURI).parsePlaylist();
+        } catch (UnsupportedEncodingException e) {
+            throw Throwables.propagate(e);
         }
     }
 }
