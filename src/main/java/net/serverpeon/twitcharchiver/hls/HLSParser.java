@@ -3,6 +3,7 @@ package net.serverpeon.twitcharchiver.hls;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.apache.logging.log4j.message.ParameterizedMessage;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -85,7 +86,9 @@ public class HLSParser {
                 .get();
 
         if (response.getStatus() != 200) {
-            throw new MalformedPlaylistException("Response was not HTTP 200");
+            throw new MalformedPlaylistException(
+                    new ParameterizedMessage("Response was not HTTP 200: {}", response).getFormattedMessage()
+            );
         }
 
         final InputStream stream = response.readEntity(InputStream.class);
