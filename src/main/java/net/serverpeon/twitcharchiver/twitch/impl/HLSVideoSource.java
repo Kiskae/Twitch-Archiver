@@ -45,20 +45,20 @@ public class HLSVideoSource implements VideoSource {
         }
     };
 
-    private final HLSPlaylist playlist;
+    private final HLSPlaylist<HLSPlaylist.Video> playlist;
     private final int mutedCount;
 
-    private HLSVideoSource(final HLSPlaylist playlist, int mutedCount) {
+    private HLSVideoSource(final HLSPlaylist<HLSPlaylist.Video> playlist, int mutedCount) {
         this.mutedCount = mutedCount;
         this.playlist = reduce(playlist);
     }
 
-    private static HLSPlaylist reduce(final HLSPlaylist playList) {
-        if (playList.videos.isEmpty()) return playList;
+    private static HLSPlaylist<HLSPlaylist.Video> reduce(final HLSPlaylist<HLSPlaylist.Video> playList) {
+        if (playList.resource.isEmpty()) return playList;
 
         try {
             final List<HLSPlaylist.Video> ret = Lists.newArrayList();
-            final Iterator<HLSPlaylist.Video> it = playList.videos.iterator();
+            final Iterator<HLSPlaylist.Video> it = playList.resource.iterator();
 
             HLSPlaylist.Video firstVideo = it.next();
             HLSPlaylist.Video lastVideo = firstVideo;
@@ -114,7 +114,7 @@ public class HLSVideoSource implements VideoSource {
                     && PREVIEW_URL.contains("/thumb/")) {
                 final URI playlistUri = TTV_VOD_CDN.resolve(MYSTERY_SEGMENT).resolve("chunked/index-dvr.m3u8");
                 logger.debug("Loading HLS playlist from: {}", playlistUri);
-                final HLSPlaylist playlist = HLSParser.build(playlistUri)
+                final HLSPlaylist<HLSPlaylist.Video> playlist = HLSParser.build(playlistUri)
                         .addKeyHandler("EXT-X-TWITCH-TOTAL-SECS", TTV_TOTAL_SECONDS)
                         .parse();
                 return Optional.<VideoSource>of(new HLSVideoSource(
@@ -155,7 +155,7 @@ public class HLSVideoSource implements VideoSource {
 
     @Override
     public int getNumberOfParts() {
-        return this.playlist.videos.size();
+        return this.playlist.resource.size();
     }
 
     @Override
@@ -184,7 +184,7 @@ public class HLSVideoSource implements VideoSource {
             }
 
             final UriFileMapping<HLSPlaylist.Video> fileMapping = new UriFileMapping<>(
-                    playlist.videos,
+                    playlist.resource,
                     new Function<HLSPlaylist.Video, URI>() {
                         @Override
                         public URI apply(HLSPlaylist.Video video) {
