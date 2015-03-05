@@ -269,18 +269,18 @@ public class TwitchApi {
 
     private static HLSPlaylist<HLSPlaylist.Source> retrieveHLSPlaylist(
             final String broadcastId,
-            final String auth,
-            final String token
+            final String token,
+            final String signature
     ) {
         try {
             final URI playlistURI = TWITCH_API_INTERNAL_USHER
                     .path("vod")
                     .path(broadcastId)
-                    .queryParam("nauth", URLEncoder.encode(auth, "UTF-8"))
-                    .queryParam("nauthsig", URLEncoder.encode(token, "UTF-8"))
+                    .queryParam("nauth", URLEncoder.encode(token, "UTF-8"))
+                    .queryParam("nauthsig", URLEncoder.encode(signature, "UTF-8"))
                     .getUri();
 
-            logger.debug("HLS Playlist source: {}", playlistURI);
+            logger.debug("retrieveHLSPlaylist: signature{{}}", signature);
 
             return HLSParser.build(playlistURI).parseSourceList();
         } catch (UnsupportedEncodingException e) {
