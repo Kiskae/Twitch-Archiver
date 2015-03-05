@@ -1,7 +1,6 @@
 package net.serverpeon.twitcharchiver.twitch;
 
 import com.google.common.base.Optional;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Iterators;
 import com.google.gson.JsonElement;
@@ -27,15 +26,19 @@ import java.net.URLEncoder;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 /**
  * This class defines all interactions and constants for the required interactions with the Twitch API.
  * <br>
  * The following API endpoints are used:
- * GET / - To validate the user-provided OAuth token
- * GET /channels/:channel/videos - To retrieve a list of all past broadcasts.
+ * GET https://api.twitch.tv/kraken/ - To validate the user-provided OAuth token
+ * GET https://api.twitch.tv/kraken/channels/:channel/videos - To retrieve a list of all past broadcasts.
  * <br>
- * GET api.justin.tv/api/broadcast/by_archive/:broadcast_id.json - To retrieve the background-information of the VOD
- * * This one is probably deprecated and not well documented.
+ * The following internal API endpoints are used:
+ * GET https://api.twitch.tv/api/videos/:broadcast_id - To retrieve the background-information of the VOD
+ * GET https://api.twitch.tv/api/vods/:broadcast_id/access_token - VoD access token request
  *
  * @author Kiskae
  * @see <a href="https://github.com/justintv/Twitch-API">Twitch API documentation</a>
@@ -66,7 +69,7 @@ public class TwitchApi {
      * @throws net.serverpeon.twitcharchiver.twitch.TwitchApiException if the twitch api returned unexpected results
      */
     public static String getTwitchUsernameWithOAuth(final OAuthToken token) throws InvalidOAuthTokenException {
-        Preconditions.checkNotNull(token, "OAuth token cannot be NULL");
+        checkNotNull(token, "OAuth token cannot be NULL");
 
         final Response response = token.queryParam(TWITCH_API_KRAKEN, TWITCH_OAUTH_URL_PARAM)
                 .request(APPLICATION_TWITCH_JSON)
@@ -121,7 +124,7 @@ public class TwitchApi {
      * @throws net.serverpeon.twitcharchiver.twitch.TwitchApiException if the twitch api returned unexpected results
      */
     public static Iterator<JsonElement> getAllPastBroadcastsForChannel(final String channelName, final OAuthToken token) {
-        Preconditions.checkNotNull(channelName, "Channel name cannot be NULL");
+        checkNotNull(channelName, "Channel name cannot be NULL");
 
         final WebTarget target = TWITCH_API_KRAKEN
                 .path("channels")
@@ -181,8 +184,8 @@ public class TwitchApi {
     }
 
     public static Iterator<JsonElement> getLimitedPastBroadcastsForChannel(final String channelName, final OAuthToken token, final int limit) {
-        Preconditions.checkNotNull(channelName, "Channel name cannot be NULL");
-        Preconditions.checkArgument(limit > 0, "Limit needs to be larger than 0");
+        checkNotNull(channelName, "Channel name cannot be NULL");
+        checkArgument(limit > 0, "Limit needs to be larger than 0");
 
         if (limit < PAST_BROADCASTS_MAX_LIMIT) {
             final WebTarget target = TWITCH_API_KRAKEN
@@ -208,7 +211,8 @@ public class TwitchApi {
     }
 
     public static BroadcastInformation getBroadcastInformation(final JsonElement broadcastData, final OAuthToken token) {
-        Preconditions.checkNotNull(broadcastData, "Data cannot be NULL");
+        checkNotNull(broadcastData, "Data cannot be NULL");
+        checkNotNull(token, "oauth token cannot be NULL");
 
         final JsonObject obj = broadcastData.getAsJsonObject();
         final String title = obj.get("title").getAsString();
@@ -250,6 +254,9 @@ public class TwitchApi {
     }
 
     public static HLSPlaylist<HLSPlaylist.Source> getVodPlaylist(final String broadcastId, final OAuthToken token) {
+        checkNotNull(broadcastId, "broadcast id cannot be NULL");
+        checkNotNull(token, "oauth token cannot be NULL");
+
         final WebTarget target = TWITCH_API_INTERNAL_API
                 .path("vods")
                 .path(broadcastId)
