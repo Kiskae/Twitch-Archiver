@@ -60,21 +60,20 @@ public class TwitchApi {
     /**
      * Validates the given OAuth token with Twitch.TV
      *
-     * @param oauthToken OAuth token to validate
+     * @param token OAuth token to validate
      * @return The user name associated with the given token
      * @throws InvalidOAuthTokenException                              If the given token is not valid
      * @throws net.serverpeon.twitcharchiver.twitch.TwitchApiException if the twitch api returned unexpected results
      */
-    public static String getTwitchUsernameWithOAuth(final String oauthToken) throws InvalidOAuthTokenException {
-        Preconditions.checkNotNull(oauthToken, "OAuth token cannot be NULL");
+    public static String getTwitchUsernameWithOAuth(final OAuthToken token) throws InvalidOAuthTokenException {
+        Preconditions.checkNotNull(token, "OAuth token cannot be NULL");
 
-        final Response response = TWITCH_API_KRAKEN
-                .queryParam(TWITCH_OAUTH_URL_PARAM, oauthToken)
+        final Response response = token.queryParam(TWITCH_API_KRAKEN, TWITCH_OAUTH_URL_PARAM)
                 .request(APPLICATION_TWITCH_JSON)
                 .get();
 
         //Truncate oauth token
-        logger.debug("getTwitchUsernameWithOAuth: {}", oauthToken.substring(oauthToken.length() / 2));
+        logger.debug("getTwitchUsernameWithOAuth: {}", token);
         if (response.getStatus() != 200) {
             throw new TwitchApiException(response);
         } else {
@@ -85,7 +84,7 @@ public class TwitchApi {
                 return tokenObj.get("user_name").getAsString();
             } else {
                 //Not a valid oauth token!
-                throw new InvalidOAuthTokenException(oauthToken);
+                throw new InvalidOAuthTokenException(token);
             }
         }
     }
@@ -121,15 +120,15 @@ public class TwitchApi {
      * @return a list of data describing all past broadcasts on the channel.
      * @throws net.serverpeon.twitcharchiver.twitch.TwitchApiException if the twitch api returned unexpected results
      */
-    public static Iterator<JsonElement> getAllPastBroadcastsForChannel(final String channelName, final String oAuthToken) {
+    public static Iterator<JsonElement> getAllPastBroadcastsForChannel(final String channelName, final OAuthToken token) {
         Preconditions.checkNotNull(channelName, "Channel name cannot be NULL");
 
-        final WebTarget channelTarget = TWITCH_API_KRAKEN
+        final WebTarget target = TWITCH_API_KRAKEN
                 .path("channels")
                 .path(channelName)
                 .path("videos")
-                .queryParam("broadcasts", true)
-                .queryParam(TWITCH_OAUTH_URL_PARAM, oAuthToken);
+                .queryParam("broadcasts", true);
+        final WebTarget channelTarget = token.queryParam(target, TWITCH_OAUTH_URL_PARAM);
 
         final JsonParser parser = new JsonParser();
 
@@ -181,17 +180,17 @@ public class TwitchApi {
         }
     }
 
-    public static Iterator<JsonElement> getLimitedPastBroadcastsForChannel(final String channelName, final String oAuthToken, final int limit) {
+    public static Iterator<JsonElement> getLimitedPastBroadcastsForChannel(final String channelName, final OAuthToken token, final int limit) {
         Preconditions.checkNotNull(channelName, "Channel name cannot be NULL");
         Preconditions.checkArgument(limit > 0, "Limit needs to be larger than 0");
 
         if (limit < PAST_BROADCASTS_MAX_LIMIT) {
-            final WebTarget channelTarget = TWITCH_API_KRAKEN
+            final WebTarget target = TWITCH_API_KRAKEN
                     .path("channels")
                     .path(channelName)
                     .path("videos")
-                    .queryParam("broadcasts", true)
-                    .queryParam(TWITCH_OAUTH_URL_PARAM, oAuthToken);
+                    .queryParam("broadcasts", true);
+            final WebTarget channelTarget = token.queryParam(target, TWITCH_OAUTH_URL_PARAM);
 
             final JsonParser parser = new JsonParser();
 
@@ -204,11 +203,11 @@ public class TwitchApi {
             }
         } else {
             //If larger than
-            return Iterators.limit(getAllPastBroadcastsForChannel(channelName, oAuthToken), limit);
+            return Iterators.limit(getAllPastBroadcastsForChannel(channelName, token), limit);
         }
     }
 
-    public static BroadcastInformation getBroadcastInformation(final JsonElement broadcastData, final String oAuthToken) {
+    public static BroadcastInformation getBroadcastInformation(final JsonElement broadcastData, final OAuthToken token) {
         Preconditions.checkNotNull(broadcastData, "Data cannot be NULL");
 
         final JsonObject obj = broadcastData.getAsJsonObject();
@@ -218,17 +217,17 @@ public class TwitchApi {
         final String broadcastId = obj.get("_id").getAsString();
         final DateTime recorded_at = DateTime.parse(obj.get("recorded_at").getAsString());
 
-        final Optional<VideoSource> source = getVideoSource(broadcastId, oAuthToken);
+        final Optional<VideoSource> source = getVideoSource(broadcastId, token);
 
         if (!source.isPresent()) throw new SubscriberOnlyException();
         return new BroadcastInformation(title, views, length, broadcastId, source.get(), recorded_at);
     }
 
-    private static Optional<VideoSource> getVideoSource(final String broadcastId, final String oAuthToken) {
-        final Response response = TWITCH_API_INTERNAL_API
+    private static Optional<VideoSource> getVideoSource(final String broadcastId, final OAuthToken token) {
+        final WebTarget target = TWITCH_API_INTERNAL_API
                 .path("videos")
-                .path(broadcastId)
-                .queryParam(TWITCH_OAUTH_URL_PARAM, oAuthToken)
+                .path(broadcastId);
+        final Response response = token.queryParam(target, TWITCH_OAUTH_URL_PARAM)
                 .request(MediaType.APPLICATION_JSON_TYPE)
                 .get();
 
@@ -242,7 +241,7 @@ public class TwitchApi {
                 return LegacyVideoSource.parse(result);
             } else if (broadcastId.startsWith("v")) {
                 //HLS style video storage
-                return HLSVideoSource.parse(result, oAuthToken);
+                return HLSVideoSource.parse(result, token);
             } else {
                 //Unrecognized video storage
                 throw new UnrecognizedVodFormatException(response.getLocation().toString());
@@ -250,12 +249,12 @@ public class TwitchApi {
         }
     }
 
-    public static HLSPlaylist<HLSPlaylist.Source> getVodPlaylist(final String broadcastId, final String oAuthToken) {
-        final Response response = TWITCH_API_INTERNAL_API
+    public static HLSPlaylist<HLSPlaylist.Source> getVodPlaylist(final String broadcastId, final OAuthToken token) {
+        final WebTarget target = TWITCH_API_INTERNAL_API
                 .path("vods")
                 .path(broadcastId)
-                .path("access_token")
-                .queryParam(TWITCH_OAUTH_URL_PARAM, oAuthToken)
+                .path("access_token");
+        final Response response = token.queryParam(target, TWITCH_OAUTH_URL_PARAM)
                 .request(MediaType.APPLICATION_JSON_TYPE)
                 .get();
 

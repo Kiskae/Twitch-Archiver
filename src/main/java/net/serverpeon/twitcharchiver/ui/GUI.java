@@ -3,10 +3,7 @@ package net.serverpeon.twitcharchiver.ui;
 import com.google.common.base.Predicate;
 import net.serverpeon.twitcharchiver.downloader.VideoStore;
 import net.serverpeon.twitcharchiver.downloader.VideoStoreDownloader;
-import net.serverpeon.twitcharchiver.twitch.InvalidOAuthTokenException;
-import net.serverpeon.twitcharchiver.twitch.SubscriberOnlyException;
-import net.serverpeon.twitcharchiver.twitch.TwitchApi;
-import net.serverpeon.twitcharchiver.twitch.UnrecognizedVodFormatException;
+import net.serverpeon.twitcharchiver.twitch.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -25,7 +22,7 @@ public class GUI extends JFrame {
     private final DownloadPanel download;
     private final AtomicReference<VideoStore> vs = new AtomicReference<>();
     private String selectedChannel = null;
-    private String userOAuthToken = null;
+    private OAuthToken userOAuthToken = null;
 
     public GUI() {
         super("Twitch Archiver - by @KiskaeEU");
@@ -33,11 +30,11 @@ public class GUI extends JFrame {
         this.oauth = new OAuthPanel(new Predicate<String>() {
             @Override
             public boolean apply(String s) {
-                final String oauthToken;
+                final OAuthToken oauthToken;
                 if (s.startsWith("oauth:"))
-                    oauthToken = s.substring(6);
+                    oauthToken = new OAuthToken(s.substring(6));
                 else
-                    oauthToken = s;
+                    oauthToken = new OAuthToken(s);
 
                 setSelectedChannel(null, null);
 
@@ -201,7 +198,7 @@ public class GUI extends JFrame {
         });
     }
 
-    private void setSelectedChannel(final String channelName, String oauthToken) {
+    private void setSelectedChannel(final String channelName, OAuthToken oauthToken) {
         this.selectedChannel = channelName;
         this.userOAuthToken = oauthToken;
         this.channel.setChannelName(channelName);
