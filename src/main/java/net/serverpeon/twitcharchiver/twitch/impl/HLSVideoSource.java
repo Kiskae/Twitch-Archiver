@@ -3,6 +3,8 @@ package net.serverpeon.twitcharchiver.twitch.impl;
 import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -14,6 +16,8 @@ import net.serverpeon.twitcharchiver.downloader.VideoSource;
 import net.serverpeon.twitcharchiver.hls.HLSHandler;
 import net.serverpeon.twitcharchiver.hls.HLSParser;
 import net.serverpeon.twitcharchiver.hls.HLSPlaylist;
+import net.serverpeon.twitcharchiver.twitch.OAuthToken;
+import net.serverpeon.twitcharchiver.twitch.TwitchApi;
 import net.serverpeon.twitcharchiver.twitch.UnrecognizedVodFormatException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,6 +33,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ForkJoinTask;
+
+import static com.google.common.base.Preconditions.checkState;
 
 public class HLSVideoSource implements VideoSource {
     private final static Logger logger = LogManager.getLogger(HLSVideoSource.class);
@@ -100,29 +106,35 @@ public class HLSVideoSource implements VideoSource {
         }
     }
 
-    public static Optional<VideoSource> parse(final JsonElement element) {
+    public static Optional<VideoSource> parse(final JsonElement element, final OAuthToken oauthToken) {
         try {
-            final String PREVIEW_URL = element.getAsJsonObject().getAsJsonPrimitive("preview").getAsString();
+            final String apiId = element.getAsJsonObject().getAsJsonPrimitive("api_id").getAsString();
+            checkState(apiId.startsWith("v"));
 
-            //                           v                                                        v
-            //http://static-cdn.jtvnw.net/v1/AUTH_system/vods_9024/shaboozey_13264185568_208329733/thumb/thumb0-30x240.jpg
-            final String MYSTERY_SEGMENT = URI.create(PREVIEW_URL).resolve("..").getPath();
+            final HLSPlaylist<HLSPlaylist.Source> sources = TwitchApi.getVodPlaylist(apiId.substring(1), oauthToken);
+            final Optional<HLSPlaylist.Source> source = Iterables.tryFind(sources.resource, new Predicate<HLSPlaylist.Source>() {
+                @Override
+                public boolean apply(HLSPlaylist.Source source) {
+                    return source.groupId.equals("chunked");
+                }
+            });
 
-            //Since this is a large hack, we verify it looks as we expect.
-            if (MYSTERY_SEGMENT.startsWith("/v1/AUTH_system/")
-                    && MYSTERY_SEGMENT.endsWith("/")
-                    && PREVIEW_URL.contains("/thumb/")) {
-                final URI playlistUri = TTV_VOD_CDN.resolve(MYSTERY_SEGMENT).resolve("chunked/index-dvr.m3u8");
-                logger.debug("Loading HLS playlist from: {}", playlistUri);
-                final HLSPlaylist<HLSPlaylist.Video> playlist = HLSParser.build(playlistUri)
+            if (source.isPresent()) {
+                logger.debug("HLS playlist for {} is {}", apiId, source.get().playlistLocation);
+
+                final HLSPlaylist<HLSPlaylist.Video> playlist = HLSParser.build(source.get().playlistLocation)
                         .addKeyHandler("EXT-X-TWITCH-TOTAL-SECS", TTV_TOTAL_SECONDS)
                         .parse();
+
                 return Optional.<VideoSource>of(new HLSVideoSource(
                         playlist,
                         calculateMutedSegments(element.getAsJsonObject())
                 ));
             } else {
-                throw new UnrecognizedVodFormatException(PREVIEW_URL);
+                throw new UnrecognizedVodFormatException(new ParameterizedMessage(
+                        "Unable to find chunked stream: {}",
+                        sources
+                ).getFormattedMessage());
             }
         } catch (Exception ex) {
             throw new UnrecognizedVodFormatException(ex);
