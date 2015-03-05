@@ -25,22 +25,22 @@ public class HLSPlaylist<E> {
                 .toString();
     }
 
-    public static class PlayList {
+    public static class Source {
         public final String groupId;
         //bits per second
         public final long bandwidth;
         public final List<String> codec;
         public final URI playlistLocation;
 
-        private PlayList(String groupId, long bandwidth, String[] codec, URI playlistLocation) {
+        private Source(String groupId, long bandwidth, String[] codec, URI playlistLocation) {
             this.groupId = groupId;
             this.bandwidth = bandwidth;
             this.codec = ImmutableList.copyOf(codec);
             this.playlistLocation = playlistLocation;
         }
 
-        public static PlayList make(String groupId, long bandwidth, String[] codec, URI playlistLocation) {
-            return new PlayList(groupId, bandwidth, codec, playlistLocation);
+        public static Source make(String groupId, long bandwidth, String[] codec, URI playlistLocation) {
+            return new Source(groupId, bandwidth, codec, playlistLocation);
         }
 
         @Override

@@ -250,7 +250,7 @@ public class TwitchApi {
         }
     }
 
-    public static HLSPlaylist<HLSPlaylist.PlayList> getVodPlaylist(final String broadcastId, final String oAuthToken) {
+    public static HLSPlaylist<HLSPlaylist.Source> getVodPlaylist(final String broadcastId, final String oAuthToken) {
         final Response response = TWITCH_API_INTERNAL_API
                 .path("vods")
                 .path(broadcastId)
@@ -268,7 +268,7 @@ public class TwitchApi {
         }
     }
 
-    private static HLSPlaylist<HLSPlaylist.PlayList> retrieveHLSPlaylist(
+    private static HLSPlaylist<HLSPlaylist.Source> retrieveHLSPlaylist(
             final String broadcastId,
             final String auth,
             final String token
@@ -283,7 +283,7 @@ public class TwitchApi {
 
             logger.debug("HLS Playlist source: {}", playlistURI);
 
-            return HLSParser.build(playlistURI).parsePlaylist();
+            return HLSParser.build(playlistURI).parseSourceList();
         } catch (UnsupportedEncodingException e) {
             throw Throwables.propagate(e);
         }

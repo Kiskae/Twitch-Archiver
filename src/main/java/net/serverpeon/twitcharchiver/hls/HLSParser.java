@@ -50,10 +50,10 @@ public class HLSParser {
         });
     }
 
-    public HLSPlaylist<HLSPlaylist.PlayList> parsePlaylist() {
-        return retrieveAndParsePlaylist(APPLICATION_HLS_PLAYLIST, new HLSTypeProcessor<HLSPlaylist.PlayList>() {
+    public HLSPlaylist<HLSPlaylist.Source> parseSourceList() {
+        return retrieveAndParsePlaylist(APPLICATION_HLS_PLAYLIST, new HLSTypeProcessor<HLSPlaylist.Source>() {
             @Override
-            public HLSPlaylist.PlayList process(URI location, Map<String, Object> state) {
+            public HLSPlaylist.Source process(URI location, Map<String, Object> state) {
                 final String videoType = (String) Objects.firstNonNull(
                         state.remove(HLSHandler.PLAYLIST_MEDIA + "-GROUP-ID"),
                         state.remove(HLSHandler.PLAYLIST_STREAM_INF + "-VIDEO"));
@@ -70,7 +70,7 @@ public class HLSParser {
                     }
                 }
 
-                return HLSPlaylist.PlayList.make(videoType, bandwidth, codecs, location);
+                return HLSPlaylist.Source.make(videoType, bandwidth, codecs, location);
             }
         });
     }
