@@ -19,7 +19,6 @@ import java.io.*;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
-import java.nio.file.Files;
 import java.util.List;
 import java.util.concurrent.ForkJoinTask;
 
@@ -153,7 +152,8 @@ public class LegacyVideoSource implements VideoSource {
             final byte buffer[] = new byte[1024 * 64]; //64kB
 
             try {
-                Files.createFile(dest.toPath());
+                //Make sure the target file exists
+                dest.createNewFile();
 
                 long totalRead = 0;
                 logger.debug("Beginning download of {} to {}", video.videoFileUrl, dest);
