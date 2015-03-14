@@ -127,7 +127,8 @@ public class GUI extends JFrame {
                                 @Override
                                 public void run() {
                                     JOptionPane.showMessageDialog(GUI.this,
-                                            "These videos are limited to subscribers, this should only show up if you're messing with code.",
+                                            "These videos are limited to subscribers, this should only show" +
+                                                    " up if you're messing with code.",
                                             "I cannae see them, captain",
                                             JOptionPane.ERROR_MESSAGE);
                                 }
@@ -135,6 +136,16 @@ public class GUI extends JFrame {
                         } catch (UnrecognizedVodFormatException ex) {
                             r.run();
                             logger.error("Exception during VoD retrieval.", ex);
+                            SwingUtilities.invokeLater(new Runnable() {
+                                @Override
+                                public void run() {
+                                    JOptionPane.showMessageDialog(GUI.this,
+                                            "Something failed while retrieving information from twitch, " +
+                                                    "please contact @KiskaeEU on twitter.",
+                                            "Error 37: Twitch",
+                                            JOptionPane.ERROR_MESSAGE);
+                                }
+                            });
                         }
                     }
                 });
