@@ -3,9 +3,7 @@ package net.serverpeon.twitcharchiver.ui;
 import com.google.common.base.Predicate;
 import net.serverpeon.twitcharchiver.downloader.VideoStore;
 import net.serverpeon.twitcharchiver.downloader.VideoStoreDownloader;
-import net.serverpeon.twitcharchiver.twitch.InvalidOAuthTokenException;
-import net.serverpeon.twitcharchiver.twitch.SubscriberOnlyException;
-import net.serverpeon.twitcharchiver.twitch.TwitchApi;
+import net.serverpeon.twitcharchiver.twitch.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -24,7 +22,7 @@ public class GUI extends JFrame {
     private final DownloadPanel download;
     private final AtomicReference<VideoStore> vs = new AtomicReference<>();
     private String selectedChannel = null;
-    private String userOAuthToken = null;
+    private OAuthToken userOAuthToken = null;
 
     public GUI() {
         super("Twitch Archiver - by @KiskaeEU");
@@ -32,11 +30,11 @@ public class GUI extends JFrame {
         this.oauth = new OAuthPanel(new Predicate<String>() {
             @Override
             public boolean apply(String s) {
-                final String oauthToken;
+                final OAuthToken oauthToken;
                 if (s.startsWith("oauth:"))
-                    oauthToken = s.substring(6);
+                    oauthToken = new OAuthToken(s.substring(6));
                 else
-                    oauthToken = s;
+                    oauthToken = new OAuthToken(s);
 
                 setSelectedChannel(null, null);
 
@@ -129,8 +127,22 @@ public class GUI extends JFrame {
                                 @Override
                                 public void run() {
                                     JOptionPane.showMessageDialog(GUI.this,
-                                            "These videos are limited to subscribers, this should only show up if you're messing with code.",
+                                            "These videos are limited to subscribers, this should only show" +
+                                                    " up if you're messing with code.",
                                             "I cannae see them, captain",
+                                            JOptionPane.ERROR_MESSAGE);
+                                }
+                            });
+                        } catch (UnrecognizedVodFormatException ex) {
+                            r.run();
+                            logger.error("Exception during VoD retrieval.", ex);
+                            SwingUtilities.invokeLater(new Runnable() {
+                                @Override
+                                public void run() {
+                                    JOptionPane.showMessageDialog(GUI.this,
+                                            "Something failed while retrieving information from twitch, " +
+                                                    "please contact @KiskaeEU on twitter.",
+                                            "Error 37: Twitch",
                                             JOptionPane.ERROR_MESSAGE);
                                 }
                             });
@@ -159,7 +171,7 @@ public class GUI extends JFrame {
                     vp.setEnabled(false);
                     download.setProcessing(true);
 
-                    new VideoStoreDownloader(vs, new Runnable() {
+                    executors.execute(new VideoStoreDownloader(vs, new Runnable() {
                         @Override
                         public void run() {
                             oauth.setEnabled(true);
@@ -174,7 +186,7 @@ public class GUI extends JFrame {
                                     JOptionPane.INFORMATION_MESSAGE
                             );
                         }
-                    }, download.getNumberOfProcesses()).start();
+                    }, download.getNumberOfProcesses()));
                 }
             }
         });
@@ -197,7 +209,7 @@ public class GUI extends JFrame {
         });
     }
 
-    private void setSelectedChannel(final String channelName, String oauthToken) {
+    private void setSelectedChannel(final String channelName, OAuthToken oauthToken) {
         this.selectedChannel = channelName;
         this.userOAuthToken = oauthToken;
         this.channel.setChannelName(channelName);

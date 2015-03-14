@@ -1,17 +1,9 @@
 package net.serverpeon.twitcharchiver.downloader;
 
-import com.google.common.base.Predicate;
 import com.google.common.base.Throwables;
-import com.google.common.collect.FluentIterable;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
-import com.google.common.io.Files;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import net.serverpeon.twitcharchiver.twitch.BroadcastInformation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.message.ParameterizedMessage;
 import org.joda.time.Period;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -19,15 +11,13 @@ import org.joda.time.format.PeriodFormatter;
 import org.joda.time.format.PeriodFormatterBuilder;
 
 import javax.swing.*;
-import java.io.*;
-import java.net.URL;
-import java.net.URLConnection;
-import java.util.Map;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.concurrent.TimeUnit;
 
 public class StoredBroadcast {
     private final static int PROGRESS_MAX = 100;
-    private final JProgressBar downloadProgress = new JProgressBar(0, PROGRESS_MAX);
     private final static Logger logger = LogManager.getLogger(StoredBroadcast.class);
     private final static PeriodFormatter timeFormatter = new PeriodFormatterBuilder()
             .appendHours()
@@ -40,16 +30,16 @@ public class StoredBroadcast {
             .toFormatter();
     private final static DateTimeFormatter dateFormatter = DateTimeFormat
             .forPattern(DateTimeFormat.patternForStyle("MM", null));
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+
+    private final JProgressBar downloadProgress = new JProgressBar(0, PROGRESS_MAX);
+
     private final BroadcastInformation bi;
     private final File storageFolder;
+    private final ProgressTracker tracker;
 
     private final int numberOfParts;
-    private int downloadedParts = 0;
-    private int failedParts = 0;
 
     private boolean selected;
-    private Map<String, Status> downloadStatus = Maps.newHashMap();
 
     StoredBroadcast(BroadcastInformation bi, File rootStorageDirectory) {
         this.bi = bi;
@@ -59,105 +49,21 @@ public class StoredBroadcast {
                 bi.title.replaceAll("[^a-zA-Z0-9\\-]", "_") //Strip characters to make safe for filesystem
         ));
         this.selected = this.storageFolder.exists();
-        this.numberOfParts = Iterables.size(this.bi.getSources());
-        //Updated downloaded
-        readStatusFile();
-        updateProgressBar();
+        this.numberOfParts = this.bi.getSource().getNumberOfParts();
+        this.tracker = new ProgressTracker(storageFolder, this.numberOfParts);
+        this.updateProgress(getDownloadedParts(), getNumberOfParts());
     }
 
-    private static void downloadSource(
-            BroadcastInformation.VideoSource vs,
-            File targetFile,
-            byte[] buffer,
-            BiConsumer<Long, Long> progressUpdater
-    ) throws IOException {
-        targetFile.createNewFile();
-
-        long totalRead = 0;
-        logger.debug("Beginning download of {} to {}", vs.videoFileUrl, targetFile);
-
-        final URLConnection urlConnection = new URL(vs.videoFileUrl).openConnection();
-        final long reportedSize = urlConnection.getContentLengthLong();
-
-        if (!urlConnection.getContentType().contains("video")) {
-            throw new IOException(String.format(
-                    "Twitch seems to be returning something that isn't video! (%s)",
-                    urlConnection.getContentType()
-            ));
-        }
-
-        try (final InputStream input = new BufferedInputStream(urlConnection.getInputStream())) {
-            try (final OutputStream output = new FileOutputStream(targetFile)) {
-                int readBytes;
-                while ((readBytes = input.read(buffer)) > 0) {
-                    output.write(buffer, 0, readBytes);
-                    totalRead += readBytes;
-                    progressUpdater.consume(totalRead, reportedSize);
-                }
-            }
-        }
-
-        if (totalRead < vs.length) {
-            //Heuristic, if the video is less than 1bps, its probably corrupted/wrong
-            throw new IOException(String.format(
-                    "Invalid file size %d bytes, %d seconds",
-                    totalRead,
-                    vs.length
-            ));
-        }
-
-        logger.debug("{} downloaded!", targetFile);
-    }
-
-    private void readStatusFile() {
-        final File status = new File(this.storageFolder, "status.json");
-        this.downloadStatus.clear();
-        if (status.exists()) {
-            try (final FileReader reader = new FileReader(status)) {
-                final Map<?, ?> map = GSON.fromJson(reader, Map.class);
-                for (Map.Entry<?, ?> entry : map.entrySet()) {
-                    this.downloadStatus.put(
-                            entry.getKey().toString(),
-                            Status.valueOf(entry.getValue().toString())
-                    );
-                }
-            } catch (IOException e) {
-                Throwables.propagate(e);
-            }
-        }
-
-        //Update downloaded bytes
-        for (final BroadcastInformation.VideoSource vs : this.getBroadcastInformation().getSources()) {
-            if (this.downloadStatus.get(vs.videoFileUrl) == Status.DOWNLOADED) {
-                this.downloadedParts++;
-            }
-        }
-    }
-
-    private void writeStatusFile() {
-        final File status = new File(this.storageFolder, "status.json");
-        try (final FileWriter writer = new FileWriter(status, false)) {
-            GSON.toJson(this.downloadStatus, writer);
-        } catch (IOException e) {
-            logger.warn("Error saving!", e);
-        }
-    }
-
-    private int getBaseProgressPercentage() {
-        return getNumberOfParts() != 0 ? (downloadedParts * PROGRESS_MAX) / getNumberOfParts() : 0;
-    }
-
-    private void updateProgressBar() {
-        final int percentage = getBaseProgressPercentage();
-        this.downloadProgress.setValue(percentage);
+    private void updateProgress(int counter, int total) {
+        this.downloadProgress.setValue(counter * PROGRESS_MAX / total);
     }
 
     public int getDownloadedParts() {
-        return this.downloadedParts;
+        return this.tracker.getStatusCount(ProgressTracker.Status.DOWNLOADED);
     }
 
     public int getFailedParts() {
-        return this.failedParts;
+        return this.tracker.getStatusCount(ProgressTracker.Status.FAILED);
     }
 
     public BroadcastInformation getBroadcastInformation() {
@@ -179,13 +85,7 @@ public class StoredBroadcast {
     }
 
     public int getNumberOfMutedParts() {
-        return FluentIterable.from(this.bi.getSources())
-                .filter(new Predicate<BroadcastInformation.VideoSource>() {
-                    @Override
-                    public boolean apply(BroadcastInformation.VideoSource videoSource) {
-                        return videoSource.muted;
-                    }
-                }).size();
+        return this.bi.getSource().getNumberOfMutedParts();
     }
 
     public int getNumberOfParts() {
@@ -217,65 +117,34 @@ public class StoredBroadcast {
         return this.downloadProgress;
     }
 
-    public void download(final VideoStoreTableView model, final int rowIdx, final int columnIdx) {
-        final int progressPerPart = PROGRESS_MAX / this.getNumberOfParts();
-        final byte buffer[] = new byte[1024 * 64]; //64kB
+    public Runnable getDownloadTask(final VideoStoreTableView model, final int rowIdx) {
+        try {
+            Files.createDirectories(this.storageFolder.toPath());
+            final ProgressTracker.ProgressUpdater tracker = new ProgressTracker.ProgressUpdater() {
 
-        this.storageFolder.mkdirs();
+                @Override
+                public void updateProgress(int counter, int total) {
+                    StoredBroadcast.this.updateProgress(counter, total);
+                    model.fireTableCellUpdated(rowIdx, VideoStoreTableView.COLUMNS.DOWNLOAD_PROGRESS.getIdx());
+                }
 
-        logger.info("DOWNLOADING: {}", this.bi);
-
-        int cursor = 0;
-        for (final BroadcastInformation.VideoSource vs : this.bi.getSources()) {
-            final File targetFile = new File(
-                    this.storageFolder,
-                    String.format(
-                            "part%d.%s",
-                            ++cursor,
-                            Files.getFileExtension(vs.videoFileUrl)
-                    )
-            );
-
-            if (this.downloadStatus.get(vs.videoFileUrl) == Status.DOWNLOADED && targetFile.exists()) continue;
-
-            try {
-                final int baseProgress = this.getBaseProgressPercentage();
-                downloadSource(vs, targetFile, buffer, new BiConsumer<Long, Long>() {
-                    private int lastProgress = Integer.MIN_VALUE;
-
-                    @Override
-                    public void consume(Long first, Long second) {
-                        int newProgress = (int) (baseProgress + (first * progressPerPart / second));
-                        if (newProgress > lastProgress) {
-                            lastProgress = newProgress;
-                            getDownloadProgress().setValue(newProgress);
-                            model.fireTableCellUpdated(
-                                    rowIdx,
-                                    VideoStoreTableView.COLUMNS.DOWNLOAD_PROGRESS.getIdx()
-                            );
-                        }
+                @Override
+                public void updateCount(ProgressTracker.Status type) {
+                    switch (type) {
+                        case DOWNLOADED:
+                            model.fireTableCellUpdated(rowIdx, VideoStoreTableView.COLUMNS.DOWNLOADED_PARTS.getIdx());
+                            break;
+                        case FAILED:
+                            model.fireTableCellUpdated(rowIdx, VideoStoreTableView.COLUMNS.FAILED_PARTS.getIdx());
+                            break;
                     }
-                });
-                this.downloadStatus.put(vs.videoFileUrl, Status.DOWNLOADED);
-                this.downloadedParts++;
-                model.fireTableCellUpdated(rowIdx, VideoStoreTableView.COLUMNS.DOWNLOADED_PARTS.getIdx());
-            } catch (IOException ex) {
-                logger.warn(new ParameterizedMessage("Error downloading {} to {}", vs.videoFileUrl, targetFile), ex);
-                targetFile.delete();
-                this.downloadStatus.put(vs.videoFileUrl, Status.FAILED);
-                this.failedParts++;
-                model.fireTableCellUpdated(rowIdx, VideoStoreTableView.COLUMNS.FAILED_PARTS.getIdx());
-            }
-            this.writeStatusFile();
+                }
+            };
 
-            //Update download display
-            this.updateProgressBar();
-            model.fireTableCellUpdated(rowIdx, columnIdx);
+            this.tracker.reset(tracker);
+            return this.bi.getSource().createDownloadTask(storageFolder, this.tracker);
+        } catch (IOException e) {
+            throw Throwables.propagate(e);
         }
-    }
-
-    private enum Status {
-        FAILED,
-        DOWNLOADED
     }
 }
