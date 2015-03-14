@@ -1,10 +1,9 @@
 package net.serverpeon.twitcharchiver.twitch;
 
-import com.google.common.collect.Lists;
 import com.google.common.base.MoreObjects;
+import net.serverpeon.twitcharchiver.downloader.VideoSource;
 import org.joda.time.DateTime;
 
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class BroadcastInformation {
@@ -12,12 +11,11 @@ public class BroadcastInformation {
     public final int views;
     public final String broadcastId;
     private final int length;
-    private final List<VideoSource> sourceList = Lists.newArrayList();
-    private final net.serverpeon.twitcharchiver.downloader.VideoSource source;
+    private final VideoSource source;
     private final DateTime recordedAt;
 
     BroadcastInformation(final String title, final int views, final int length,
-                         final String broadcastId, final net.serverpeon.twitcharchiver.downloader.VideoSource source,
+                         final String broadcastId, final VideoSource source,
                          final DateTime recordedAt
     ) {
         this.title = title;
@@ -25,7 +23,6 @@ public class BroadcastInformation {
         this.length = length;
         this.broadcastId = broadcastId;
         this.source = source;
-        //this.sourceList = sourceList;
         this.recordedAt = recordedAt;
     }
 
@@ -37,12 +34,7 @@ public class BroadcastInformation {
         return this.views;
     }
 
-    @Deprecated
-    public Iterable<VideoSource> getSources() {
-        return this.sourceList;
-    }
-
-    public net.serverpeon.twitcharchiver.downloader.VideoSource getSource() {
+    public VideoSource getSource() {
         return this.source;
     }
 
@@ -73,44 +65,7 @@ public class BroadcastInformation {
                 .add("length", length)
                 .add("broadcastId", broadcastId)
                 .add("recordedAt", recordedAt)
-                .add("sourceList", sourceList)
+                .add("videoSource", source)
                 .toString();
-    }
-
-    @Deprecated
-    public static class VideoSource {
-        public final String videoFileUrl;
-        public final int length; //seconds
-        public final boolean muted;
-
-        public VideoSource(final String video_file_url, final int length, final boolean muted) {
-            this.videoFileUrl = video_file_url;
-            this.length = length;
-            this.muted = muted;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof VideoSource)) return false;
-
-            VideoSource that = (VideoSource) o;
-
-            return videoFileUrl.equals(that.videoFileUrl);
-
-        }
-
-        @Override
-        public String toString() {
-            return Objects.toStringHelper(this)
-                    .add("videoFileUrl", videoFileUrl)
-                    .add("length", length)
-                    .toString();
-        }
-
-        @Override
-        public int hashCode() {
-            return videoFileUrl.hashCode();
-        }
     }
 }
