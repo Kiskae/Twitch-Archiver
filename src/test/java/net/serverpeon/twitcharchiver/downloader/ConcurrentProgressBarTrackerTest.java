@@ -1,6 +1,7 @@
 package net.serverpeon.twitcharchiver.downloader;
 
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.Uninterruptibles;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -9,6 +10,7 @@ import org.junit.Test;
 import java.util.List;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.TimeUnit;
 
 public class ConcurrentProgressBarTrackerTest {
     private final static long MB = (long) 1024 * 1024;
@@ -113,10 +115,8 @@ public class ConcurrentProgressBarTrackerTest {
                 target.updateProgress(cursor - Math.max(newCursor, 0));
                 cursor = newCursor;
 
-                try {
-                    Thread.sleep(1);
-                } catch (InterruptedException ignored) {
-                }
+                //Artificially delay
+                Uninterruptibles.sleepUninterruptibly(1, TimeUnit.MILLISECONDS);
             }
         }
     }
