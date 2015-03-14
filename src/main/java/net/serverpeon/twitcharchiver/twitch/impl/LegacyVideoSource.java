@@ -1,8 +1,6 @@
 package net.serverpeon.twitcharchiver.twitch.impl;
 
-import com.google.common.base.Function;
-import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
+import com.google.common.base.*;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonArray;
@@ -21,6 +19,8 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.List;
 import java.util.concurrent.ForkJoinTask;
+
+import static com.google.common.base.Preconditions.checkState;
 
 public class LegacyVideoSource implements VideoSource {
     private final static Logger logger = LogManager.getLogger(LegacyVideoSource.class);
@@ -156,7 +156,9 @@ public class LegacyVideoSource implements VideoSource {
 
             try {
                 //Make sure the target file exists
-                dest.createNewFile();
+                if (!dest.exists()) {
+                    checkState(dest.createNewFile());
+                }
 
                 long totalRead = 0;
                 logger.debug("Beginning download of {} to {}", video.videoFileUrl, dest);
@@ -196,7 +198,7 @@ public class LegacyVideoSource implements VideoSource {
                 logger.debug("{} downloaded!", dest);
             } catch (IOException e) {
                 logger.warn(new ParameterizedMessage("Error downloading {} to {}", video.videoFileUrl, dest), e);
-                dest.delete();
+                checkState(dest.delete());
                 tracker.invalidate();
             }
         }

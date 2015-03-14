@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 public class VideoStore {
     private final static Logger logger = LogManager.getLogger(VideoStore.class);
@@ -32,7 +33,7 @@ public class VideoStore {
         this.storageDirectory = checkNotNull(storageDirectory, "Storage location cannot be NULL");
         this.channelName = checkNotNull(channelName, "Channel name cannot be NULL");
         this.oAuthToken = checkNotNull(oAuthToken, "OAuth token cannot be NULL");
-        this.storageDirectory.mkdirs();
+        checkState(this.storageDirectory.mkdirs());
     }
 
     private void loadBroadcastInformation(final Iterator<JsonElement> videos, final Predicate<BroadcastInformation> processor) {

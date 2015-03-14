@@ -1,9 +1,6 @@
 package net.serverpeon.twitcharchiver.twitch.impl;
 
-import com.google.common.base.Function;
-import com.google.common.base.MoreObjects;
-import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
+import com.google.common.base.*;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.gson.JsonArray;
@@ -246,7 +243,9 @@ public class HLSVideoSource implements VideoSource {
 
             try {
                 //Make sure the target file exists
-                dest.createNewFile();
+                if (!dest.exists()) {
+                    checkState(dest.createNewFile());
+                }
 
                 long totalRead = 0;
                 logger.debug("Beginning download of {} to {}", video.videoLocation, dest);
@@ -286,7 +285,7 @@ public class HLSVideoSource implements VideoSource {
                 logger.debug("{} downloaded!", dest);
             } catch (IOException e) {
                 logger.warn(new ParameterizedMessage("Error downloading {} to {}", video.videoLocation, dest), e);
-                dest.delete();
+                checkState(dest.delete());
                 tracker.invalidate();
             }
         }
