@@ -24,6 +24,8 @@ public class ProgressTracker {
 
     private final File trackerFile;
     private final int numberOfParts;
+    private final ConcurrentProgressBarTracker pBar = new ConcurrentProgressBarTracker();
+    private final Map<String, Partial> partials = Maps.newHashMap();
     private ProgressUpdater updater = null;
 
     public ProgressTracker(File storageFolder, int numberOfParts) {
@@ -62,6 +64,14 @@ public class ProgressTracker {
         } finally {
             mapLock.writeLock().unlock();
         }
+
+        //Reset progress bar tracker
+        this.pBar.reset(getStatusCount(Status.DOWNLOADED), numberOfParts);
+
+        //Reset total so the progress bar is correctly updated when download resumes
+        for (Partial p : partials.values()) {
+            p.storedTotal = 0;
+        }
     }
 
     public Status getStatus(final String ident) {
@@ -84,7 +94,13 @@ public class ProgressTracker {
     }
 
     public Partial track(final String ident) {
-        return new Partial(ident, updater);
+        if (partials.containsKey(ident)) {
+            return partials.get(ident);
+        } else {
+            final Partial p = new Partial(ident);
+            partials.put(ident, p);
+            return p;
+        }
     }
 
     private void write() {
@@ -113,20 +129,30 @@ public class ProgressTracker {
     }
 
     public class Partial {
+        private final static int PROGRESS_RESOLUTION = 1000;
+        private final int latestProgress = -1;
+        private final Object pKey = new Object();
         private final String identifier;
-        private final ProgressUpdater updater;
+        private long storedTotal = 0;
+        private long soFar = 0;
 
-        Partial(final String identifier, ProgressUpdater updater) {
+        Partial(final String identifier) {
             this.identifier = identifier;
-            this.updater = updater;
         }
 
         public void update(final long soFar, final long expectedTotal) {
-            //updater.updateProgress(soFar, expectedTotal);
-        }
+            if (storedTotal != expectedTotal) {
+                pBar.modifyExpectedTotal(expectedTotal - storedTotal, pKey);
+                storedTotal = expectedTotal;
+            }
 
-        private int count() {
-            return getStatusCount(Status.DOWNLOADED);
+
+            long addedDownload = Math.min(soFar, expectedTotal) - this.soFar;
+            this.soFar += addedDownload;
+            int progress = pBar.updateAndGetProgress(addedDownload, PROGRESS_RESOLUTION);
+            if (progress != latestProgress) {
+                updater.updateProgress(progress, PROGRESS_RESOLUTION);
+            }
         }
 
         public void invalidate() {
@@ -134,7 +160,12 @@ public class ProgressTracker {
             try {
                 currentStatus.put(identifier, Status.FAILED);
                 updater.updateCount(Status.FAILED);
-                updater.updateProgress(count(), numberOfParts);
+
+                //Reverse all download progress
+                updater.updateProgress(
+                        pBar.updateAndGetProgress(-1 * this.soFar, PROGRESS_RESOLUTION),
+                        PROGRESS_RESOLUTION
+                );
                 write();
             } finally {
                 mapLock.writeLock().unlock();
@@ -146,7 +177,13 @@ public class ProgressTracker {
             try {
                 currentStatus.put(identifier, Status.DOWNLOADED);
                 updater.updateCount(Status.DOWNLOADED);
-                updater.updateProgress(count(), numberOfParts);
+
+                //Make sure the the total file has been registered as downloaded
+                updater.updateProgress(
+                        pBar.updateAndGetProgress(storedTotal - soFar, PROGRESS_RESOLUTION),
+                        PROGRESS_RESOLUTION
+                );
+
                 write();
             } finally {
                 mapLock.writeLock().unlock();
