@@ -23,6 +23,7 @@ import javax.ws.rs.core.Response;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLEncoder;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -179,7 +180,7 @@ public class TwitchApi {
             };
         } else {
             //No videos available for this channel
-            return Iterators.emptyIterator();
+            return Collections.emptyIterator();
         }
     }
 
@@ -202,7 +203,7 @@ public class TwitchApi {
             if (response.isPresent()) {
                 return response.get().getAsJsonArray("videos").iterator();
             } else {
-                return Iterators.emptyIterator();
+                return Collections.emptyIterator();
             }
         } else {
             //If larger than

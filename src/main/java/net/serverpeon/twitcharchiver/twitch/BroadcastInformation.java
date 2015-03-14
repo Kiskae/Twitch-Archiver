@@ -1,7 +1,7 @@
 package net.serverpeon.twitcharchiver.twitch;
 
-import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
+import com.google.common.base.MoreObjects;
 import org.joda.time.DateTime;
 
 import java.util.List;
@@ -67,7 +67,7 @@ public class BroadcastInformation {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 .add("title", title)
                 .add("views", views)
                 .add("length", length)

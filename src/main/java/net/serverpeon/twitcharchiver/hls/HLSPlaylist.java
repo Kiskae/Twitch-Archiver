@@ -1,6 +1,6 @@
 package net.serverpeon.twitcharchiver.hls;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -19,7 +19,7 @@ public class HLSPlaylist<E> {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 .add("resource", resource)
                 .add("properties", properties)
                 .toString();
@@ -45,7 +45,7 @@ public class HLSPlaylist<E> {
 
         @Override
         public String toString() {
-            return Objects.toStringHelper(this)
+            return MoreObjects.toStringHelper(this)
                     .add("groupId", groupId)
                     .add("bandwidth", bandwidth)
                     .add("codec", codec)
@@ -69,7 +69,7 @@ public class HLSPlaylist<E> {
 
         @Override
         public String toString() {
-            return Objects.toStringHelper(this)
+            return MoreObjects.toStringHelper(this)
                     .add("videoLocation", videoLocation)
                     .add("lengthMS", lengthMS)
                     .toString();

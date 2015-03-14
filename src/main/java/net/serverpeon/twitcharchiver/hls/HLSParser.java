@@ -1,6 +1,6 @@
 package net.serverpeon.twitcharchiver.hls;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -56,9 +56,10 @@ public class HLSParser {
         return retrieveAndParsePlaylist(APPLICATION_HLS_PLAYLIST, new HLSTypeProcessor<HLSPlaylist.Source>() {
             @Override
             public HLSPlaylist.Source process(URI location, Map<String, Object> state) {
-                final String videoType = (String) Objects.firstNonNull(
+                final String videoType = (String) MoreObjects.firstNonNull(
                         state.remove(HLSHandler.PLAYLIST_MEDIA + "-GROUP-ID"),
-                        state.remove(HLSHandler.PLAYLIST_STREAM_INF + "-VIDEO"));
+                        state.remove(HLSHandler.PLAYLIST_STREAM_INF + "-VIDEO")
+                );
                 final long bandwidth = (long) state.remove(HLSHandler.PLAYLIST_STREAM_INF + "-BANDWIDTH");
                 final String[] codecs = (String[]) state.remove(HLSHandler.PLAYLIST_STREAM_INF + "-CODECS");
 
