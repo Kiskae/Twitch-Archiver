@@ -136,9 +136,9 @@ public class ProgressTracker {
 
     public class Partial {
         private final static int PROGRESS_RESOLUTION = 1000;
-        private final int latestProgress = -1;
         private final Object pKey = new Object();
         private final String identifier;
+        private int latestProgress = -1;
         private long storedTotal = 0;
         private long soFar = 0;
 
@@ -158,6 +158,7 @@ public class ProgressTracker {
             int progress = pBar.updateAndGetProgress(addedDownload, PROGRESS_RESOLUTION);
             if (progress != latestProgress) {
                 updater.updateProgress(progress, PROGRESS_RESOLUTION);
+                latestProgress = progress;
             }
         }
 
