@@ -1,7 +1,7 @@
 package net.serverpeon.twitcharchiver.twitch.impl;
 
 import com.google.common.base.Function;
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
@@ -28,7 +28,6 @@ import javax.ws.rs.core.UriBuilder;
 import java.io.*;
 import java.net.URI;
 import java.net.URLConnection;
-import java.nio.file.Files;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -98,7 +97,7 @@ public class HLSVideoSource implements VideoSource {
             ).build();
             ret.add(HLSPlaylist.Video.make(uri, length));
 
-            return new HLSPlaylist(ret, playList.properties);
+            return new HLSPlaylist<>(ret, playList.properties);
         } catch (Exception ex) {
             //If a failure occurs, just skip the reduce step
             return playList;
@@ -159,7 +158,7 @@ public class HLSVideoSource implements VideoSource {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 .add("playlist", playlist)
                 .toString();
     }

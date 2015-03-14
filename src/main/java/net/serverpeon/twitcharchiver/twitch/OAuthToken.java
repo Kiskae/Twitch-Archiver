@@ -1,6 +1,6 @@
 package net.serverpeon.twitcharchiver.twitch;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
@@ -22,7 +22,7 @@ public class OAuthToken {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 //For privacy, ensure the token is never fully logged
                 .add("token", token.substring(token.length() / 2))
                 .toString();

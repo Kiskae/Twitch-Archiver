@@ -12,8 +12,6 @@ import java.util.Locale;
 import java.util.Map;
 
 public class HLSHandler {
-    private final static Logger logger = LogManager.getLogger(HLSHandler.class);
-
     public final static String EXTINF_KEY = "EXTINF";
     public final static String EVENT_ENDED = "EXT-X-ENDLIST";
     public final static String PLAYLIST_MEDIA = "EXT-X-MEDIA";
@@ -21,6 +19,8 @@ public class HLSHandler {
     public final static String VERSION_KEY = "EXT-X-VERSION";
     public final static String SEGMENT_TARGET_DURATION = "EXT-X-TARGETDURATION";
     public final static String PLAYLIST_TYPE = "EXT-X-PLAYLIST-TYPE";
+    private final static Logger logger = LogManager.getLogger(HLSHandler.class);
+    private static final Map<String, KeyHandler> DEFAULT_HANDLERS;
 
     static {
         DEFAULT_HANDLERS = ImmutableMap
@@ -112,31 +112,10 @@ public class HLSHandler {
                 ).build();
     }
 
-    private static final Map<String, KeyHandler> DEFAULT_HANDLERS;
     private final Map<String, KeyHandler> handlers;
 
     public HLSHandler() {
         handlers = Maps.newHashMap(DEFAULT_HANDLERS);
-    }
-
-    public void addHandler(final String key, final KeyHandler handler) {
-        if (handlers.containsKey(key)) {
-            throw new IllegalStateException();
-        } else {
-            handlers.put(key, handler);
-        }
-    }
-
-    public void handle(final String line, final Map<String, Object> result) {
-        //remove prefix and split by ':'
-        final String[] parts = line.substring(1).split(":", 2);
-        final KeyHandler handler = handlers.get(parts[0]);
-        if (handler != null) {
-            handler.handle(
-                    parts.length == 2 ? splitUnquoted(parts[1]) : new String[0],
-                    result
-            );
-        }
     }
 
     private static String[] splitUnquoted(String str) {
@@ -181,6 +160,26 @@ public class HLSHandler {
             return str.substring(1, len - 1);
         } else {
             return str;
+        }
+    }
+
+    public void addHandler(final String key, final KeyHandler handler) {
+        if (handlers.containsKey(key)) {
+            throw new IllegalStateException();
+        } else {
+            handlers.put(key, handler);
+        }
+    }
+
+    public void handle(final String line, final Map<String, Object> result) {
+        //remove prefix and split by ':'
+        final String[] parts = line.substring(1).split(":", 2);
+        final KeyHandler handler = handlers.get(parts[0]);
+        if (handler != null) {
+            handler.handle(
+                    parts.length == 2 ? splitUnquoted(parts[1]) : new String[0],
+                    result
+            );
         }
     }
 
