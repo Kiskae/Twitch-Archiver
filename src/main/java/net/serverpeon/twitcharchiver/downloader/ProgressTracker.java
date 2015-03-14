@@ -2,7 +2,6 @@ package net.serverpeon.twitcharchiver.downloader;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.MapMaker;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -14,18 +13,14 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.LongAccumulator;
-import java.util.concurrent.atomic.LongAdder;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class ProgressTracker {
     private final static Logger logger = LogManager.getLogger(ProgressTracker.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     private final Map<String, Status> currentStatus = Maps.newHashMap();
-
-    private final ReentrantLock writeLock = new ReentrantLock();
+    private final ReentrantReadWriteLock mapLock = new ReentrantReadWriteLock();
 
     private final File trackerFile;
     private final int numberOfParts;
@@ -48,12 +43,7 @@ public class ProgressTracker {
                 logger.debug("Error reading!", e);
             }
 
-            Iterables.removeIf(currentStatus.values(), new Predicate<Status>() {
-                @Override
-                public boolean apply(Status status) {
-                    return status != Status.DOWNLOADED;
-                }
-            });
+            this.reset(null); //Reset 'failed' entries
         }
     }
 
@@ -61,6 +51,17 @@ public class ProgressTracker {
         this.updater = updater;
 
         //Clean up downloading state
+        mapLock.writeLock().lock();
+        try {
+            Iterables.removeIf(currentStatus.values(), new Predicate<Status>() {
+                @Override
+                public boolean apply(Status status) {
+                    return status != Status.DOWNLOADED;
+                }
+            });
+        } finally {
+            mapLock.writeLock().unlock();
+        }
     }
 
     public Status getStatus(final String ident) {
@@ -69,12 +70,17 @@ public class ProgressTracker {
     }
 
     public int getStatusCount(final Status status) {
-        return Maps.filterValues(currentStatus, new Predicate<Status>() {
-            @Override
-            public boolean apply(Status s) {
-                return status == s;
-            }
-        }).size();
+        mapLock.readLock().lock();
+        try {
+            return Maps.filterValues(currentStatus, new Predicate<Status>() {
+                @Override
+                public boolean apply(Status s) {
+                    return status == s;
+                }
+            }).size();
+        } finally {
+            mapLock.readLock().unlock();
+        }
     }
 
     public Partial track(final String ident) {
@@ -82,10 +88,15 @@ public class ProgressTracker {
     }
 
     private void write() {
-        try (final FileWriter writer = new FileWriter(trackerFile, false)) {
-            GSON.toJson(this.currentStatus, writer);
-        } catch (IOException e) {
-            logger.warn("Error saving!", e);
+        mapLock.readLock().lock();
+        try {
+            try (final FileWriter writer = new FileWriter(trackerFile, false)) {
+                GSON.toJson(this.currentStatus, writer);
+            } catch (IOException e) {
+                logger.warn("Error saving!", e);
+            }
+        } finally {
+            mapLock.readLock().unlock();
         }
     }
 
@@ -119,26 +130,26 @@ public class ProgressTracker {
         }
 
         public void invalidate() {
-            writeLock.lock();
+            mapLock.writeLock().lock();
             try {
                 currentStatus.put(identifier, Status.FAILED);
                 updater.updateCount(Status.FAILED);
                 updater.updateProgress(count(), numberOfParts);
                 write();
             } finally {
-                writeLock.unlock();
+                mapLock.writeLock().unlock();
             }
         }
 
         public void finish() {
-            writeLock.lock();
+            mapLock.writeLock().lock();
             try {
                 currentStatus.put(identifier, Status.DOWNLOADED);
                 updater.updateCount(Status.DOWNLOADED);
                 updater.updateProgress(count(), numberOfParts);
                 write();
             } finally {
-                writeLock.unlock();
+                mapLock.writeLock().unlock();
             }
         }
     }
