@@ -28,6 +28,7 @@ import javax.ws.rs.core.UriBuilder;
 import java.io.*;
 import java.net.URI;
 import java.net.URLConnection;
+import java.nio.charset.Charset;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -217,7 +218,10 @@ public class HLSVideoSource implements VideoSource {
 
             ForkJoinTask.invokeAll(downloaders);
 
-            try (final PrintWriter pw = new PrintWriter(new FileWriter(new File(targetFolder, "ffmpeg-concat.txt")))) {
+            try (final PrintWriter pw = new PrintWriter(new OutputStreamWriter(
+                    new FileOutputStream(new File(targetFolder, "ffmpeg-concat.txt")),
+                    Charsets.UTF_8
+            ))) {
                 fileMapping.generateConcatFile(pw, targetFolder.toPath(), tracker);
             } catch (IOException e) {
                 logger.warn("Failed to save ffmpeg concat file.", e);

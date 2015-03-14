@@ -1,5 +1,6 @@
 package net.serverpeon.twitcharchiver.downloader;
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
@@ -8,10 +9,7 @@ import com.google.gson.GsonBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -33,7 +31,11 @@ public class ProgressTracker {
         this.trackerFile = new File(storageFolder, "status.json");
 
         if (trackerFile.exists()) {
-            try (final FileReader reader = new FileReader(trackerFile)) {
+
+            try (final InputStreamReader reader = new InputStreamReader(
+                    new FileInputStream(trackerFile),
+                    Charsets.UTF_8
+            )) {
                 final Map<?, ?> map = GSON.fromJson(reader, Map.class);
                 for (Map.Entry<?, ?> entry : map.entrySet()) {
                     this.currentStatus.put(
@@ -106,7 +108,11 @@ public class ProgressTracker {
     private void write() {
         mapLock.readLock().lock();
         try {
-            try (final FileWriter writer = new FileWriter(trackerFile, false)) {
+
+            try (final OutputStreamWriter writer = new OutputStreamWriter(
+                    new FileOutputStream(trackerFile, false),
+                    Charsets.UTF_8
+            )) {
                 GSON.toJson(this.currentStatus, writer);
             } catch (IOException e) {
                 logger.warn("Error saving!", e);

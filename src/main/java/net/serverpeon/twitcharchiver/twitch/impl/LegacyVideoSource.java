@@ -128,7 +128,10 @@ public class LegacyVideoSource implements VideoSource {
 
             ForkJoinTask.invokeAll(downloaders);
 
-            try (final PrintWriter pw = new PrintWriter(new FileWriter(new File(targetFolder, "ffmpeg-concat.txt")))) {
+            try (final PrintWriter pw = new PrintWriter(new OutputStreamWriter(
+                    new FileOutputStream(new File(targetFolder, "ffmpeg-concat.txt")),
+                    Charsets.UTF_8
+            ))) {
                 fileMappings.generateConcatFile(pw, targetFolder.toPath(), progressTracker);
             } catch (IOException e) {
                 logger.warn("Failed to save ffmpeg concat file.", e);
