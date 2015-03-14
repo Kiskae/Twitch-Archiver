@@ -96,7 +96,7 @@ public class HLSVideoSource implements VideoSource {
             ret.add(HLSPlaylist.Video.make(uri, length));
 
             return new HLSPlaylist<>(ret, playList.properties);
-        } catch (Exception ex) {
+        } catch (RuntimeException ex) {
             //If a failure occurs, just skip the reduce step
             return playList;
         }
@@ -187,7 +187,7 @@ public class HLSVideoSource implements VideoSource {
 
         @Override
         public void run() {
-            if (playlist.properties.get(HLSHandler.EVENT_ENDED) != Boolean.TRUE) {
+            if (!Boolean.TRUE.equals(playlist.properties.get(HLSHandler.EVENT_ENDED))) {
                 return;
             }
 
@@ -226,7 +226,7 @@ public class HLSVideoSource implements VideoSource {
         }
     }
 
-    private class HLSPartDownloader implements Runnable {
+    private static class HLSPartDownloader implements Runnable {
         private final File dest;
         private final HLSPlaylist.Video video;
         private final ProgressTracker.Partial tracker;

@@ -139,7 +139,7 @@ public class LegacyVideoSource implements VideoSource {
         }
     }
 
-    private class LegacyPartDownloader implements Runnable {
+    private static class LegacyPartDownloader implements Runnable {
         private final File dest;
         private final VideoPart video;
         private final ProgressTracker.Partial tracker;
