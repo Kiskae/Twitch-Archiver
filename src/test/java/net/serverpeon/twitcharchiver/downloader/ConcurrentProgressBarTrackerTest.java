@@ -92,6 +92,15 @@ public class ConcurrentProgressBarTrackerTest {
         Assert.assertEquals(1000, pBar.getProgress(1000));
     }
 
+    @Test
+    public void testLargeMajorlyDistributedDownload() {
+        final ConcurrentProgressBarTracker pBar = new ConcurrentProgressBarTracker();
+        pBar.reset(0, 300);
+        runDistibutedTest(pBar, 300, 1024 * MB); //1GB
+
+        Assert.assertEquals(1000, pBar.getProgress(1000));
+    }
+
     private class DownloadSimulator implements Runnable {
         private final ConcurrentProgressBarTracker target;
         private final long totalSize;
