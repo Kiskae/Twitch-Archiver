@@ -33,7 +33,10 @@ public class VideoStore {
         this.storageDirectory = checkNotNull(storageDirectory, "Storage location cannot be NULL");
         this.channelName = checkNotNull(channelName, "Channel name cannot be NULL");
         this.oAuthToken = checkNotNull(oAuthToken, "OAuth token cannot be NULL");
-        checkState(this.storageDirectory.mkdirs());
+
+        if (!storageDirectory.exists()) {
+            checkState(this.storageDirectory.mkdirs());
+        }
     }
 
     private void loadBroadcastInformation(final Iterator<JsonElement> videos, final Predicate<BroadcastInformation> processor) {
