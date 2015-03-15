@@ -23,6 +23,7 @@ public class ConcurrentProgressBarTracker {
         this.totalSize.set(0);
         this.downloadedSize.set(0);
         this.activeDownloads.set(0);
+        this.objectKeys.clear();
     }
 
     public int updateAndGetProgress(long delta, int resolution) {
