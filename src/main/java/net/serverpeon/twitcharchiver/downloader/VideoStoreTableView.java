@@ -135,6 +135,16 @@ public class VideoStoreTableView extends AbstractTableModel {
         });
 
         private final static COLUMNS[] columnsByIdx;
+
+        static {
+            final COLUMNS[] tmp = COLUMNS.values();
+            columnsByIdx = new COLUMNS[tmp.length];
+
+            for (COLUMNS c : tmp) {
+                columnsByIdx[c.idx] = c;
+            }
+        }
+
         private final int idx;
         private final String name;
         private final Class<?> clazz;
@@ -163,15 +173,6 @@ public class VideoStoreTableView extends AbstractTableModel {
             this.editable = editable;
             this.get = get;
             this.set = set;
-        }
-
-        static {
-            final COLUMNS[] tmp = COLUMNS.values();
-            columnsByIdx = new COLUMNS[tmp.length];
-
-            for (COLUMNS c : tmp) {
-                columnsByIdx[c.idx] = c;
-            }
         }
 
         private static COLUMNS getByIdx(int idx) {

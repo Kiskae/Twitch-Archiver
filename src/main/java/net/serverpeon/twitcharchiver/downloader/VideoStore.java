@@ -5,6 +5,7 @@ import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.gson.JsonElement;
 import net.serverpeon.twitcharchiver.twitch.BroadcastInformation;
+import net.serverpeon.twitcharchiver.twitch.OAuthToken;
 import net.serverpeon.twitcharchiver.twitch.TwitchApi;
 import net.serverpeon.twitcharchiver.twitch.TwitchApiException;
 import org.apache.logging.log4j.LogManager;
@@ -18,20 +19,24 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 public class VideoStore {
     private final static Logger logger = LogManager.getLogger(VideoStore.class);
     private final VideoStoreTableView tableView = new VideoStoreTableView(this);
     private final File storageDirectory;
     private final String channelName;
-    private final String oAuthToken;
+    private final OAuthToken oAuthToken;
     private final List<StoredBroadcast> items = Lists.newArrayList();
 
-    public VideoStore(final File storageDirectory, final String channelName, final String oAuthToken) {
+    public VideoStore(final File storageDirectory, final String channelName, final OAuthToken oAuthToken) {
         this.storageDirectory = checkNotNull(storageDirectory, "Storage location cannot be NULL");
         this.channelName = checkNotNull(channelName, "Channel name cannot be NULL");
         this.oAuthToken = checkNotNull(oAuthToken, "OAuth token cannot be NULL");
-        this.storageDirectory.mkdirs();
+
+        if (!storageDirectory.exists()) {
+            checkState(this.storageDirectory.mkdirs());
+        }
     }
 
     private void loadBroadcastInformation(final Iterator<JsonElement> videos, final Predicate<BroadcastInformation> processor) {
@@ -44,13 +49,7 @@ public class VideoStore {
                 logger.warn(new ParameterizedMessage("Failure to get {}", videoInfo), ex);
             }
 
-            //if (++requestCount <= 15) {
             Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
-            //} else {
-            //    logger.debug("Beginning rate-limit delay.");
-            //    Uninterruptibles.sleepUninterruptibly(1, TimeUnit.MINUTES);
-            //    requestCount = 0;
-            //}
         }
     }
 

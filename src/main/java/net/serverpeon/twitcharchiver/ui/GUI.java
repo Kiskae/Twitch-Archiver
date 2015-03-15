@@ -4,10 +4,11 @@ import com.google.common.base.Predicate;
 import net.serverpeon.twitcharchiver.downloader.VideoStore;
 import net.serverpeon.twitcharchiver.downloader.VideoStoreDownloader;
 import net.serverpeon.twitcharchiver.twitch.InvalidOAuthTokenException;
-import net.serverpeon.twitcharchiver.twitch.SubscriberOnlyException;
+import net.serverpeon.twitcharchiver.twitch.OAuthToken;
 import net.serverpeon.twitcharchiver.twitch.TwitchApi;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.message.ParameterizedMessage;
 
 import javax.swing.*;
 import java.awt.*;
@@ -24,7 +25,7 @@ public class GUI extends JFrame {
     private final DownloadPanel download;
     private final AtomicReference<VideoStore> vs = new AtomicReference<>();
     private String selectedChannel = null;
-    private String userOAuthToken = null;
+    private OAuthToken userOAuthToken = null;
 
     public GUI() {
         super("Twitch Archiver - by @KiskaeEU");
@@ -32,11 +33,11 @@ public class GUI extends JFrame {
         this.oauth = new OAuthPanel(new Predicate<String>() {
             @Override
             public boolean apply(String s) {
-                final String oauthToken;
+                final OAuthToken oauthToken;
                 if (s.startsWith("oauth:"))
-                    oauthToken = s.substring(6);
+                    oauthToken = new OAuthToken(s.substring(6));
                 else
-                    oauthToken = s;
+                    oauthToken = new OAuthToken(s);
 
                 setSelectedChannel(null, null);
 
@@ -123,15 +124,31 @@ public class GUI extends JFrame {
 
                         try {
                             vs.loadData(limit, r);
-                        } catch (SubscriberOnlyException ex) {
+                        } catch (final RuntimeException ex) {
                             r.run();
+                            logger.error(
+                                    new ParameterizedMessage("Exception during VoD retrieval: {}", ex.getMessage()),
+                                    ex
+                            );
+
                             SwingUtilities.invokeLater(new Runnable() {
                                 @Override
                                 public void run() {
-                                    JOptionPane.showMessageDialog(GUI.this,
-                                            "These videos are limited to subscribers, this should only show up if you're messing with code.",
-                                            "I cannae see them, captain",
-                                            JOptionPane.ERROR_MESSAGE);
+                                    if (ex instanceof DialogEnabled) {
+                                        JOptionPane.showMessageDialog(
+                                                GUI.this,
+                                                ((DialogEnabled) ex).getBody(),
+                                                ((DialogEnabled) ex).getTitle(),
+                                                JOptionPane.ERROR_MESSAGE
+                                        );
+                                    } else {
+                                        JOptionPane.showMessageDialog(
+                                                GUI.this,
+                                                "Something unexpected happened, please contact @KiskaeEU",
+                                                "Exception!",
+                                                JOptionPane.ERROR_MESSAGE
+                                        );
+                                    }
                                 }
                             });
                         }
@@ -159,7 +176,7 @@ public class GUI extends JFrame {
                     vp.setEnabled(false);
                     download.setProcessing(true);
 
-                    new VideoStoreDownloader(vs, new Runnable() {
+                    executors.execute(new VideoStoreDownloader(vs, new Runnable() {
                         @Override
                         public void run() {
                             oauth.setEnabled(true);
@@ -174,7 +191,7 @@ public class GUI extends JFrame {
                                     JOptionPane.INFORMATION_MESSAGE
                             );
                         }
-                    }, download.getNumberOfProcesses()).start();
+                    }, download.getNumberOfProcesses()));
                 }
             }
         });
@@ -197,7 +214,7 @@ public class GUI extends JFrame {
         });
     }
 
-    private void setSelectedChannel(final String channelName, String oauthToken) {
+    private void setSelectedChannel(final String channelName, OAuthToken oauthToken) {
         this.selectedChannel = channelName;
         this.userOAuthToken = oauthToken;
         this.channel.setChannelName(channelName);
