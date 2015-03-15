@@ -3,9 +3,12 @@ package net.serverpeon.twitcharchiver.ui;
 import com.google.common.base.Predicate;
 import net.serverpeon.twitcharchiver.downloader.VideoStore;
 import net.serverpeon.twitcharchiver.downloader.VideoStoreDownloader;
-import net.serverpeon.twitcharchiver.twitch.*;
+import net.serverpeon.twitcharchiver.twitch.InvalidOAuthTokenException;
+import net.serverpeon.twitcharchiver.twitch.OAuthToken;
+import net.serverpeon.twitcharchiver.twitch.TwitchApi;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.message.ParameterizedMessage;
 
 import javax.swing.*;
 import java.awt.*;
@@ -121,29 +124,31 @@ public class GUI extends JFrame {
 
                         try {
                             vs.loadData(limit, r);
-                        } catch (SubscriberOnlyException ex) {
+                        } catch (final RuntimeException ex) {
                             r.run();
+                            logger.error(
+                                    new ParameterizedMessage("Exception during VoD retrieval: {}", ex.getMessage()),
+                                    ex
+                            );
+
                             SwingUtilities.invokeLater(new Runnable() {
                                 @Override
                                 public void run() {
-                                    JOptionPane.showMessageDialog(GUI.this,
-                                            "These videos are limited to subscribers, this should only show" +
-                                                    " up if you're messing with code.",
-                                            "I cannae see them, captain",
-                                            JOptionPane.ERROR_MESSAGE);
-                                }
-                            });
-                        } catch (UnrecognizedVodFormatException ex) {
-                            r.run();
-                            logger.error("Exception during VoD retrieval.", ex);
-                            SwingUtilities.invokeLater(new Runnable() {
-                                @Override
-                                public void run() {
-                                    JOptionPane.showMessageDialog(GUI.this,
-                                            "Something failed while retrieving information from twitch, " +
-                                                    "please contact @KiskaeEU on twitter.",
-                                            "Error 37: Twitch",
-                                            JOptionPane.ERROR_MESSAGE);
+                                    if (ex instanceof DialogEnabled) {
+                                        JOptionPane.showMessageDialog(
+                                                GUI.this,
+                                                ((DialogEnabled) ex).getBody(),
+                                                ((DialogEnabled) ex).getTitle(),
+                                                JOptionPane.ERROR_MESSAGE
+                                        );
+                                    } else {
+                                        JOptionPane.showMessageDialog(
+                                                GUI.this,
+                                                "Something unexpected happened, please contact @KiskaeEU",
+                                                "Exception!",
+                                                JOptionPane.ERROR_MESSAGE
+                                        );
+                                    }
                                 }
                             });
                         }
