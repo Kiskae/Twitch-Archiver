@@ -284,6 +284,7 @@ public class TwitchApi {
             final URI playlistURI = TWITCH_API_INTERNAL_USHER
                     .path("vod")
                     .path(broadcastId)
+                    .queryParam("allow_source", true)
                     .queryParam("nauth", URLEncoder.encode(token, "UTF-8"))
                     .queryParam("nauthsig", URLEncoder.encode(signature, "UTF-8"))
                     .getUri();
