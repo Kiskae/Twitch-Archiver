@@ -7,6 +7,7 @@ import java.net.URL
 import java.time.Duration
 import java.util.*
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class HlsParserTest {
@@ -15,6 +16,7 @@ class HlsParserTest {
     fun testSimplePlaylist() {
         val url: URL = Resources.getResource("playlists/simple.m3u8")
         val playlist = HlsParser.parseSimplePlaylist(url.toURI(), Resources.asCharSource(url, Charsets.UTF_8))
+        assertNotNull(playlist)
 
         assertEquals(Duration.ofSeconds(5220), playlist.maximum_segment_duration)
         for (segment in playlist) {
@@ -27,6 +29,7 @@ class HlsParserTest {
     fun testSlidingWindow() {
         val url: URL = Resources.getResource("playlists/sliding_window.m3u8")
         val playlist = HlsParser.parseSimplePlaylist(url.toURI(), Resources.asCharSource(url, Charsets.UTF_8))
+        assertNotNull(playlist)
 
         assertEquals(Duration.ofSeconds(8), playlist.maximum_segment_duration)
         for (segment in playlist) {
@@ -39,12 +42,14 @@ class HlsParserTest {
     fun testEncryptedSegments() {
         val url: URL = Resources.getResource("playlists/encrypted_playlist.m3u8")
         val playlist = HlsParser.parseSimplePlaylist(url.toURI(), Resources.asCharSource(url, Charsets.UTF_8))
+        assertNotNull(playlist)
     }
 
     @Test
     fun testVariantPlaylist() {
         val url: URL = Resources.getResource("playlists/variant_playlist.m3u8")
         val playlist = HlsParser.parseVariantPlaylist(url.toURI(), Resources.asCharSource(url, Charsets.UTF_8))
+        assertNotNull(playlist)
 
         val seenBandwidths: MutableSet<Long> = HashSet()
         for (variant in playlist) {
@@ -58,23 +63,27 @@ class HlsParserTest {
     fun testPlaylistWithIFrames() {
         val url: URL = Resources.getResource("playlists/variant_playlist_iframes.m3u8")
         val playlist = HlsParser.parseVariantPlaylist(url.toURI(), Resources.asCharSource(url, Charsets.UTF_8))
+        assertNotNull(playlist)
     }
 
     @Test
     fun testVariantPlaylistWithAudio() {
         val url: URL = Resources.getResource("playlists/variant_alternative_audio.m3u8")
         val playlist = HlsParser.parseVariantPlaylist(url.toURI(), Resources.asCharSource(url, Charsets.UTF_8))
+        assertNotNull(playlist)
     }
 
     @Test
     fun testVariantPlaylistWithVideo() {
         val url: URL = Resources.getResource("playlists/variant_alternative_video.m3u8")
         val playlist = HlsParser.parseVariantPlaylist(url.toURI(), Resources.asCharSource(url, Charsets.UTF_8))
+        assertNotNull(playlist)
     }
 
     @Test
     fun testTwitchPlaylist() {
         val url: URL = Resources.getResource("playlists/twitch.m3u8")
         val playlist = HlsParser.parseSimplePlaylist(url.toURI(), Resources.asCharSource(url, Charsets.UTF_8))
+        assertNotNull(playlist)
     }
 }
