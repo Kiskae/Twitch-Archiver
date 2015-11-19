@@ -1,0 +1,17 @@
+#EXTM3U
+#EXT-X-MEDIA-SEQUENCE:7794
+#EXT-X-TARGETDURATION:15
+
+#EXT-X-KEY:METHOD=AES-128,URI="https://priv.example.com/key.php?r=52"
+
+#EXTINF:15,
+http://media.example.com/fileSequence52-1.ts
+#EXTINF:15,
+http://media.example.com/fileSequence52-2.ts
+#EXTINF:15,
+http://media.example.com/fileSequence52-3.ts
+
+#EXT-X-KEY:METHOD=AES-128,URI="https://priv.example.com/key.php?r=53"
+
+#EXTINF:15,
+http://media.example.com/fileSequence53-1.ts

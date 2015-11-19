@@ -1,1 +1,3 @@
 rootProject.name = 'twitch-archiver'
+
+include 'hls-parser'
