@@ -25,7 +25,6 @@ import javax.ws.rs.core.UriBuilder;
 import java.io.*;
 import java.net.URI;
 import java.net.URLConnection;
-import java.nio.charset.Charset;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -176,56 +175,6 @@ public class HLSVideoSource implements VideoSource {
         return new HLSDownloader(targetFolder, tracker);
     }
 
-    private class HLSDownloader implements Runnable {
-        private final File targetFolder;
-        private final ProgressTracker tracker;
-
-        public HLSDownloader(File targetFolder, ProgressTracker tracker) {
-            this.targetFolder = targetFolder;
-            this.tracker = tracker;
-        }
-
-        @Override
-        public void run() {
-            if (!Boolean.TRUE.equals(playlist.properties.get(HLSHandler.EVENT_ENDED))) {
-                return;
-            }
-
-            final UriFileMapping<HLSPlaylist.Video> fileMapping = new UriFileMapping<>(
-                    playlist.resource,
-                    new Function<HLSPlaylist.Video, URI>() {
-                        @Override
-                        public URI apply(HLSPlaylist.Video video) {
-                            return video.videoLocation;
-                        }
-                    },
-                    this.targetFolder
-            );
-
-            final List<ForkJoinTask<?>> downloaders = fileMapping.generateTasks(tracker, new Function<UriFileMapping<net.serverpeon.twitcharchiver.hls.HLSPlaylist.Video>.UriFileEntry, ForkJoinTask<?>>() {
-                @Override
-                public ForkJoinTask<?> apply(UriFileMapping<HLSPlaylist.Video>.UriFileEntry entry) {
-                    return ForkJoinTask.adapt(new HLSPartDownloader(
-                            entry.target,
-                            entry.source,
-                            tracker.track(entry.getURI().toString())
-                    ));
-                }
-            });
-
-            ForkJoinTask.invokeAll(downloaders);
-
-            try (final PrintWriter pw = new PrintWriter(new OutputStreamWriter(
-                    new FileOutputStream(new File(targetFolder, "ffmpeg-concat.txt")),
-                    Charsets.UTF_8
-            ))) {
-                fileMapping.generateConcatFile(pw, targetFolder.toPath(), tracker);
-            } catch (IOException e) {
-                logger.warn("Failed to save ffmpeg concat file.", e);
-            }
-        }
-    }
-
     private static class HLSPartDownloader implements Runnable {
         private final File dest;
         private final HLSPlaylist.Video video;
@@ -287,6 +236,56 @@ public class HLSVideoSource implements VideoSource {
                 logger.warn(new ParameterizedMessage("Error downloading {} to {}", video.videoLocation, dest), e);
                 checkState(dest.delete());
                 tracker.invalidate();
+            }
+        }
+    }
+
+    private class HLSDownloader implements Runnable {
+        private final File targetFolder;
+        private final ProgressTracker tracker;
+
+        public HLSDownloader(File targetFolder, ProgressTracker tracker) {
+            this.targetFolder = targetFolder;
+            this.tracker = tracker;
+        }
+
+        @Override
+        public void run() {
+            if (!Boolean.TRUE.equals(playlist.properties.get(HLSHandler.EVENT_ENDED))) {
+                return;
+            }
+
+            final UriFileMapping<HLSPlaylist.Video> fileMapping = new UriFileMapping<>(
+                    playlist.resource,
+                    new Function<HLSPlaylist.Video, URI>() {
+                        @Override
+                        public URI apply(HLSPlaylist.Video video) {
+                            return video.videoLocation;
+                        }
+                    },
+                    this.targetFolder
+            );
+
+            final List<ForkJoinTask<?>> downloaders = fileMapping.generateTasks(tracker, new Function<UriFileMapping<net.serverpeon.twitcharchiver.hls.HLSPlaylist.Video>.UriFileEntry, ForkJoinTask<?>>() {
+                @Override
+                public ForkJoinTask<?> apply(UriFileMapping<HLSPlaylist.Video>.UriFileEntry entry) {
+                    return ForkJoinTask.adapt(new HLSPartDownloader(
+                            entry.target,
+                            entry.source,
+                            tracker.track(entry.getURI().toString())
+                    ));
+                }
+            });
+
+            ForkJoinTask.invokeAll(downloaders);
+
+            try (final PrintWriter pw = new PrintWriter(new OutputStreamWriter(
+                    new FileOutputStream(new File(targetFolder, "ffmpeg-concat.txt")),
+                    Charsets.UTF_8
+            ))) {
+                fileMapping.generateConcatFile(pw, targetFolder.toPath(), tracker);
+            } catch (IOException e) {
+                logger.warn("Failed to save ffmpeg concat file.", e);
             }
         }
     }

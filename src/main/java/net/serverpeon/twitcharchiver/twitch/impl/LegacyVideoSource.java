@@ -1,6 +1,9 @@
 package net.serverpeon.twitcharchiver.twitch.impl;
 
-import com.google.common.base.*;
+import com.google.common.base.Charsets;
+import com.google.common.base.Function;
+import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonArray;
@@ -97,48 +100,6 @@ public class LegacyVideoSource implements VideoSource {
         }
     }
 
-    private class LegacyDownloader implements Runnable {
-        private final File targetFolder;
-        private final ProgressTracker progressTracker;
-
-        LegacyDownloader(File targetFolder, ProgressTracker progressTracker) {
-            this.targetFolder = targetFolder;
-            this.progressTracker = progressTracker;
-        }
-
-        @Override
-        public void run() {
-            final UriFileMapping<VideoPart> fileMappings = new UriFileMapping<>(parts, new Function<VideoPart, URI>() {
-                @Override
-                public URI apply(VideoPart videoPart) {
-                    return URI.create(videoPart.videoFileUrl);
-                }
-            }, this.targetFolder);
-
-            final List<ForkJoinTask<?>> downloaders = fileMappings.generateTasks(progressTracker, new Function<UriFileMapping<VideoPart>.UriFileEntry, ForkJoinTask<?>>() {
-                @Override
-                public ForkJoinTask<?> apply(UriFileMapping<VideoPart>.UriFileEntry entry) {
-                    return ForkJoinTask.adapt(new LegacyPartDownloader(
-                            entry.target,
-                            entry.source,
-                            progressTracker.track(entry.getURI().toString())
-                    ));
-                }
-            });
-
-            ForkJoinTask.invokeAll(downloaders);
-
-            try (final PrintWriter pw = new PrintWriter(new OutputStreamWriter(
-                    new FileOutputStream(new File(targetFolder, "ffmpeg-concat.txt")),
-                    Charsets.UTF_8
-            ))) {
-                fileMappings.generateConcatFile(pw, targetFolder.toPath(), progressTracker);
-            } catch (IOException e) {
-                logger.warn("Failed to save ffmpeg concat file.", e);
-            }
-        }
-    }
-
     private static class LegacyPartDownloader implements Runnable {
         private final File dest;
         private final VideoPart video;
@@ -200,6 +161,48 @@ public class LegacyVideoSource implements VideoSource {
                 logger.warn(new ParameterizedMessage("Error downloading {} to {}", video.videoFileUrl, dest), e);
                 checkState(dest.delete());
                 tracker.invalidate();
+            }
+        }
+    }
+
+    private class LegacyDownloader implements Runnable {
+        private final File targetFolder;
+        private final ProgressTracker progressTracker;
+
+        LegacyDownloader(File targetFolder, ProgressTracker progressTracker) {
+            this.targetFolder = targetFolder;
+            this.progressTracker = progressTracker;
+        }
+
+        @Override
+        public void run() {
+            final UriFileMapping<VideoPart> fileMappings = new UriFileMapping<>(parts, new Function<VideoPart, URI>() {
+                @Override
+                public URI apply(VideoPart videoPart) {
+                    return URI.create(videoPart.videoFileUrl);
+                }
+            }, this.targetFolder);
+
+            final List<ForkJoinTask<?>> downloaders = fileMappings.generateTasks(progressTracker, new Function<UriFileMapping<VideoPart>.UriFileEntry, ForkJoinTask<?>>() {
+                @Override
+                public ForkJoinTask<?> apply(UriFileMapping<VideoPart>.UriFileEntry entry) {
+                    return ForkJoinTask.adapt(new LegacyPartDownloader(
+                            entry.target,
+                            entry.source,
+                            progressTracker.track(entry.getURI().toString())
+                    ));
+                }
+            });
+
+            ForkJoinTask.invokeAll(downloaders);
+
+            try (final PrintWriter pw = new PrintWriter(new OutputStreamWriter(
+                    new FileOutputStream(new File(targetFolder, "ffmpeg-concat.txt")),
+                    Charsets.UTF_8
+            ))) {
+                fileMappings.generateConcatFile(pw, targetFolder.toPath(), progressTracker);
+            } catch (IOException e) {
+                logger.warn("Failed to save ffmpeg concat file.", e);
             }
         }
     }

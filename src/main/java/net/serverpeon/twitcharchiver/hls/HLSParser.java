@@ -60,7 +60,7 @@ public class HLSParser {
                         state.remove(HLSHandler.PLAYLIST_MEDIA + "-GROUP-ID"),
                         state.remove(HLSHandler.PLAYLIST_STREAM_INF + "-VIDEO")
                 );
-                final long bandwidth = (long) state.remove(HLSHandler.PLAYLIST_STREAM_INF + "-BANDWIDTH");
+                final long bandwidth = (Long) state.remove(HLSHandler.PLAYLIST_STREAM_INF + "-BANDWIDTH");
                 final String[] codecs = (String[]) state.remove(HLSHandler.PLAYLIST_STREAM_INF + "-CODECS");
 
                 //Clean up playlist-specific values.
