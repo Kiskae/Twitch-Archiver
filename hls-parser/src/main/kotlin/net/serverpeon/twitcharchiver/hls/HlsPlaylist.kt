@@ -1,5 +1,6 @@
 package net.serverpeon.twitcharchiver.hls
 
+import com.google.common.base.Preconditions
 import java.net.URI
 import java.time.Duration
 
@@ -11,6 +12,7 @@ data class HlsPlaylist<Type>(private val data: Map<HlsTag<*>, Any?>, private val
 
         @Suppress("UNCHECKED_CAST")
         operator fun <T> get(key: HlsTag<T>): T? {
+            Preconditions.checkArgument(key.hasAttributes, "Given key does not have properties")
             return data[key] as? T
         }
     }
@@ -20,6 +22,7 @@ data class HlsPlaylist<Type>(private val data: Map<HlsTag<*>, Any?>, private val
 
         @Suppress("UNCHECKED_CAST")
         operator fun <T> get(key: HlsTag<T>): T? {
+            Preconditions.checkArgument(key.hasAttributes, "Given key does not have properties")
             return data[key] as? T
         }
     }
