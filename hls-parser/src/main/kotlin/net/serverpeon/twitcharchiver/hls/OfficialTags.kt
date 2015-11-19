@@ -12,7 +12,7 @@ import java.time.ZonedDateTime
 object OfficialTags {
     /**
      * An Extended M3U file is distinguished from a basic M3U file by its
-    first line, which MUST be the tag #EXTM3U.
+     * first line, which MUST be the tag #EXTM3U.
      */
     val EXTM3U: HlsTag<Nothing> = HlsTag(
             "EXTM3U",
