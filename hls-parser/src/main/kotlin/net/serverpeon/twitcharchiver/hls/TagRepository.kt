@@ -42,7 +42,7 @@ sealed class TagRepository(tags: Collection<HlsTag<*>>) {
     }
 
     class Mutable internal constructor(tags: Collection<HlsTag<*>>) : TagRepository(tags) {
-        fun register(tag: HlsTag<Any?>) {
+        fun <T> register(tag: HlsTag<T>) {
             this.internalTags = ImmutableMap.builder<String, HlsTag<*>>()
                     .putAll(this.internalTags)
                     .put(tag.tag, tag)

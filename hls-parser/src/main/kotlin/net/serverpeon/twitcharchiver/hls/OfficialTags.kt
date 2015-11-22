@@ -440,7 +440,7 @@ object OfficialTags {
                 "BANDWIDTH" -> bandwidth = parser.readDecimalInt()
                 "PROGRAM-ID" -> programId = parser.readDecimalInt()
                 "CODECS" -> codecs = parser.readQuotedString()
-                "RESOLUTION" -> resolution = parser.readResolution()
+                "RESOLUTION" -> resolution = parser.readResolution(allowStrayQuotes = true)
                 "AUDIO" -> audio = parser.readQuotedString()
                 "VIDEO" -> video = parser.readQuotedString()
             }

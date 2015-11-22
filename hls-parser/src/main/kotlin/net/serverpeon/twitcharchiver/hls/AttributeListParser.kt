@@ -124,7 +124,7 @@ class AttributeListParser(private val input: String) {
      * character.  The first integer is a horizontal pixel dimension
      * (width); the second is a vertical pixel dimension (height).
      */
-    fun readResolution(): Resolution {
+    fun readResolution(allowStrayQuotes: Boolean = false): Resolution {
         val previousCursor = this.cursor
         val nextPair = findExpectedToken(',')
         val pivot = findExpectedToken('x')
@@ -133,9 +133,21 @@ class AttributeListParser(private val input: String) {
         checkState(pivot != -1 && (nextPair == -1 || pivot < nextPair), "Malformed attribute list, invalid resolution format")
 
         try {
-            val width = readUntil(pivot).toInt()
+            val width = readUntil(pivot).let { str ->
+                if (allowStrayQuotes && str.startsWith('"')) {
+                    str.substring(1)
+                } else {
+                    str
+                }
+            }.toInt()
             setAfterToken(pivot)
-            val height = readUntil(nextPair).toInt()
+            val height = readUntil(nextPair).let { str ->
+                if (allowStrayQuotes && str.endsWith('"')) {
+                    str.substring(0, str.length - 1)
+                } else {
+                    str
+                }
+            }.toInt()
             setAfterToken(nextPair)
             return Resolution(width, height)
         } catch (ex: NumberFormatException) {
