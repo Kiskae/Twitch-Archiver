@@ -1,0 +1,47 @@
+{
+    "title": "Nobbel: Gearing Up Horde Paladin",
+    "description": null,
+    "broadcast_id": 17222890336,
+    "status": "recorded",
+    "tag_list": "",
+    "_id": "v22275787",
+    "recorded_at": "2015-10-24T22:17:04Z",
+    "game": "World of Warcraft",
+    "length": 6678,
+    "delete_at": "2015-12-23T22:17:04Z",
+    "is_muted": true,
+    "preview": "http://static-cdn.jtvnw.net/v1/AUTH_system/vods_55f8/nobbel87_17222890336_333209336/thumb/thumb0-320x240.jpg",
+    "thumbnails": [
+        "http://static-cdn.jtvnw.net/v1/AUTH_system/vods_55f8/nobbel87_17222890336_333209336/thumb/thumb0-320x240.jpg",
+        "http://static-cdn.jtvnw.net/v1/AUTH_system/vods_55f8/nobbel87_17222890336_333209336/thumb/thumb1-320x240.jpg",
+        "http://static-cdn.jtvnw.net/v1/AUTH_system/vods_55f8/nobbel87_17222890336_333209336/thumb/thumb2-320x240.jpg",
+        "http://static-cdn.jtvnw.net/v1/AUTH_system/vods_55f8/nobbel87_17222890336_333209336/thumb/thumb3-320x240.jpg"
+    ],
+    "url": "http://www.twitch.tv/nobbel87/v/22275787",
+    "views": 168,
+    "fps": {
+        "audio_only": 0.0,
+        "medium": 29.9910192990741,
+        "mobile": 19.9881235545608,
+        "high": 29.9910192990741,
+        "low": 29.9910192990741,
+        "chunked": 30.0000029945652
+    },
+    "resolutions": {
+        "medium": "852x480",
+        "mobile": "400x226",
+        "high": "1280x720",
+        "low": "640x360",
+        "chunked": "1920x1080"
+    },
+    "broadcast_type": "archive",
+    "created_at": "2015-10-24T22:17:26Z",
+    "_links": {
+        "self": "http://api.twitch.tv/kraken/videos/v22275787",
+        "channel": "http://api.twitch.tv/kraken/channels/nobbel87"
+    },
+    "channel": {
+        "name": "nobbel87",
+        "display_name": "nobbel87"
+    }
+}
