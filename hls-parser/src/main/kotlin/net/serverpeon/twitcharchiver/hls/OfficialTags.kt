@@ -549,7 +549,36 @@ object OfficialTags {
     val EXT_X_I_FRAME_STREAM_INF: HlsTag<Any> = HlsTag(
             "EXT-X-I-FRAME-STREAM-INF",
             appliesTo = HlsTag.AppliesTo.ADDITIONAL_DATA
-    ) //TODO: implement
+    ) { rawData ->
+        val parser = AttributeListParser(rawData)
+
+        var bandwidth: Long? = null
+        var programId: Long? = null
+        var codecs: String? = null
+        var resolution: AttributeListParser.Resolution? = null
+        var video: String? = null
+        var uri: URI? = null
+
+        while (parser.hasMoreAttributes()) {
+            when (parser.readAttributeName()) {
+                "BANDWIDTH" -> bandwidth = parser.readDecimalInt()
+                "PROGRAM-ID" -> programId = parser.readDecimalInt()
+                "CODECS" -> codecs = parser.readQuotedString()
+                "RESOLUTION" -> resolution = parser.readResolution(allowStrayQuotes = true)
+                "VIDEO" -> video = parser.readQuotedString()
+                "URI" -> uri = URI.create(parser.readQuotedString())
+            }
+        }
+
+        IFrameStreamInformation(
+                bandwidth!!,
+                programId,
+                codecs?.let { ImmutableList.copyOf(it.split(',')) } ?: ImmutableList.of(),
+                resolution,
+                video,
+                uri!!
+        )
+    }
 
     /**
      * The EXT-X-VERSION tag indicates the compatibility version of the
@@ -601,6 +630,15 @@ object OfficialTags {
             val resolution: AttributeListParser.Resolution?,
             val audio: String?,
             val video: String?
+    )
+
+    data class IFrameStreamInformation(
+            val bandwidth: Long,
+            val programId: Long?,
+            val codecs: List<String>,
+            val resolution: AttributeListParser.Resolution?,
+            val video: String?,
+            val uri: URI
     )
 
     enum class PlaylistType {
