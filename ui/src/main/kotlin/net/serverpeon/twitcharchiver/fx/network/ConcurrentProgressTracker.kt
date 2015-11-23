@@ -1,7 +1,7 @@
 package net.serverpeon.twitcharchiver.fx.network
 
+import com.google.common.collect.MapMaker
 import java.util.*
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
 import java.util.concurrent.atomic.AtomicLongFieldUpdater
 
@@ -9,7 +9,9 @@ class ConcurrentProgressTracker {
     @Volatile private var totalSize: Long = 0
     @Volatile private var downloadedSize: Long = 0
     @Volatile private var activeDownloads: Int = 0
-    private val objectKeys: MutableSet<Any> = Collections.newSetFromMap(ConcurrentHashMap())
+    private val objectKeys: MutableSet<Any> = Collections.newSetFromMap(
+            MapMaker().weakKeys().makeMap()
+    )
     private var alreadyDownloaded = 0
     private var totalExpectedDownloads = -1
 
