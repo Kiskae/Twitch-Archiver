@@ -6,6 +6,7 @@ import retrofit.Response
 import retrofit.Retrofit
 import rx.Single
 import rx.SingleSubscriber
+import rx.subscriptions.Subscriptions
 
 class SubscriberCallback<T>(val sub: SingleSubscriber<in T>) : Callback<T> {
     override fun onFailure(t: Throwable?) {
@@ -26,6 +27,14 @@ class SubscriberCallback<T>(val sub: SingleSubscriber<in T>) : Callback<T> {
 
 fun <T> Call<T>.toRx(): Single<T> {
     return Single.create { sub ->
-        this.clone().enqueue(SubscriberCallback(sub))
+        this.clone().apply {
+            // Kick off the request
+            enqueue(SubscriberCallback(sub))
+
+            // If the subscriber unsubscribes, cancel the request
+            sub.add(Subscriptions.create {
+                this.cancel()
+            })
+        }
     }
 }
