@@ -18,12 +18,14 @@ import net.serverpeon.twitcharchiver.twitch.errors.UnrecognizedVodFormatExceptio
 import net.serverpeon.twitcharchiver.twitch.json.DateTimeConverter
 import net.serverpeon.twitcharchiver.twitch.json.DurationConverter
 import net.serverpeon.twitcharchiver.twitch.playlist.Playlist
-import retrofit.*
+import retrofit.GsonConverterFactory
+import retrofit.Retrofit
+import rx.Observable
+import rx.Single
 import java.io.IOException
 import java.time.Duration
 import java.time.ZonedDateTime
 import java.util.*
-import java.util.concurrent.CompletableFuture
 
 /**
  * Unified access to all the API calls required to download broadcasts from twitch.
@@ -67,14 +69,14 @@ class TwitchApi(token: OAuthToken) {
      * If the OAuth token is invalid then the optional will be empty
      */
     @Throws(TwitchApiException::class, IOException::class)
-    fun retrieveUser(): CompletableFuture<Optional<String>> {
-        return krakenApi.authStatus().enqueue().thenApplyAsync { user ->
+    fun retrieveUser(): Single<Optional<String>> {
+        return krakenApi.authStatus().toRx().map { user ->
             if (user.token?.valid ?: false) {
                 Optional.of(user.token!!.userName!!)
             } else {
-                Optional.empty()
+                Optional.empty() //Is a bad token an error?
             }
-        }.exceptionally { Optional.empty() }
+        }
     }
 
     /**
@@ -82,45 +84,37 @@ class TwitchApi(token: OAuthToken) {
      * provide all the videos available on the channel.
      */
     @Throws(IOException::class)
-    fun videoList(channelName: String, limit: Int = -1): CompletableFuture<Iterator<KrakenApi.VideoListResponse.Video>> {
+    fun videoList(channelName: String, limit: Int = -1): Observable<KrakenApi.VideoListResponse.Video> {
         require(limit != 0) { "Limit must be higher than 0" }
 
         if (limit > 0 && limit <= BROADCASTS_PER_REQUEST) {
-            return krakenApi.videoList(channelName).enqueue().thenApply { it.videos.iterator() }
+            return krakenApi.videoList(channelName, limit = limit)
+                    .toRx()
+                    .toObservable()
+                    .flatMapIterable { it.videos }
         } else {
-            return krakenApi.videoList(channelName).enqueue().thenApply { ret ->
-                val totalVideos = if (limit < 0) ret.totalVideos else Math.min(limit, ret.totalVideos)
+            return krakenApi.videoList(channelName)
+                    .toRx()
+                    .toObservable()
+                    .flatMap { response ->
+                        val totalVideos = if (limit < 0) response.totalVideos else Math.min(limit, response.totalVideos)
 
-                object : Iterator<KrakenApi.VideoListResponse.Video> {
-                    var internalIterator = ret.videos.iterator()
-                    var nextOffset = BROADCASTS_PER_REQUEST
-
-                    override fun hasNext(): Boolean {
-                        return internalIterator.hasNext() || nextOffset < totalVideos
-                    }
-
-                    override fun next(): KrakenApi.VideoListResponse.Video {
-                        if (!internalIterator.hasNext() && nextOffset < totalVideos) {
-                            val nextResponse = krakenApi.videoList(
+                        val nextCalls: MutableList<Observable<KrakenApi.VideoListResponse.Video>> = LinkedList()
+                        for (nextOffset in IntRange(BROADCASTS_PER_REQUEST, totalVideos).step(BROADCASTS_PER_REQUEST)) {
+                            nextCalls.add(krakenApi.videoList(
                                     channelName,
                                     limit = Math.min(BROADCASTS_PER_REQUEST, totalVideos - nextOffset),
                                     offset = nextOffset
-                            ).execute() //Blocking, but what can you do?
-                            // Maybe use Rx?
-
-                            internalIterator = nextResponse.body().videos.iterator()
-                            nextOffset += BROADCASTS_PER_REQUEST
+                            ).toRx().toObservable().flatMapIterable { it.videos })
                         }
 
-                        if (internalIterator.hasNext()) {
-                            return internalIterator.next()
-                        } else {
-                            throw NoSuchElementException()
-                        }
+                        Observable.concat(
+                                Observable.from(response.videos), //We start with the videos we already have
+                                Observable.concat(
+                                        Observable.from(nextCalls) // Then we perform the remaining calls in order
+                                )
+                        )
                     }
-
-                }
-            }
         }
     }
 
@@ -131,7 +125,7 @@ class TwitchApi(token: OAuthToken) {
      * If something breaks, check here first.
      */
     @Throws(TwitchApiException::class, IOException::class)
-    fun loadPlaylist(broadcastId: String): CompletableFuture<Playlist> {
+    fun loadPlaylist(broadcastId: String): Single<Playlist> {
         if (broadcastId.startsWith('a')) {
             //Old style video storage
             return retrieveLegacyPlaylist(broadcastId)
@@ -143,10 +137,10 @@ class TwitchApi(token: OAuthToken) {
         }
     }
 
-    private fun retrieveHlsPlaylist(broadcastId: Long): CompletableFuture<Playlist> {
+    private fun retrieveHlsPlaylist(broadcastId: Long): Single<Playlist> {
         return internalApi.requestVodAccess(broadcastId)
-                .enqueue()
-                .thenApplyAsync { auth ->
+                .toRx()
+                .map { auth ->
                     val url = UsherApi.buildResourceUrl(broadcastId, auth)
                     try {
                         val variants = HlsParser.parseVariantPlaylist(
@@ -174,7 +168,6 @@ class TwitchApi(token: OAuthToken) {
                             throw ex
                         }
                     }
-
                 }
     }
 
@@ -182,30 +175,9 @@ class TwitchApi(token: OAuthToken) {
         data class ChanSubDetails(val restricted_bitrates: List<String>?, val privileged: Boolean?)
     }
 
-    private fun retrieveLegacyPlaylist(broadcastId: String): CompletableFuture<Playlist> {
+    private fun retrieveLegacyPlaylist(broadcastId: String): Single<Playlist> {
         return internalApi.videoData(broadcastId)
-                .enqueue()
-                .thenApplyAsync { Playlist.loadLegacyPlaylist(it) }
-    }
-
-    private fun <T> Call<T>.enqueue(): CompletableFuture<T> {
-        val future: CompletableFuture<T> = CompletableFuture()
-
-        this.enqueue(object : Callback<T> {
-            override fun onFailure(t: Throwable?) {
-                future.completeExceptionally(t)
-            }
-
-            override fun onResponse(response: Response<T>, retrofit: Retrofit?) {
-                if (response.isSuccess) {
-                    future.complete(response.body())
-                } else {
-                    future.completeExceptionally(ResponseException(response))
-                }
-            }
-
-        })
-
-        return future
+                .toRx()
+                .map { Playlist.loadLegacyPlaylist(it) }
     }
 }
