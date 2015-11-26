@@ -12,8 +12,8 @@ import com.squareup.okhttp.Response
 internal class OAuthInterceptor(private val token: OAuthToken) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         return chain.proceed(chain.request().let { req ->
-            if (token.internalToken != null && isSecureTwitchApi(req.httpUrl())) {
-                req.newBuilder().addHeader("Authorization", "OAuth ${token.internalToken}")
+            if (token.value != null && isSecureTwitchApi(req.httpUrl())) {
+                req.newBuilder().addHeader("Authorization", "OAuth ${token.value}")
             } else {
                 req.newBuilder()
             }.addHeader("Accept", "Accept: application/vnd.twitchtv.v3+json").build()

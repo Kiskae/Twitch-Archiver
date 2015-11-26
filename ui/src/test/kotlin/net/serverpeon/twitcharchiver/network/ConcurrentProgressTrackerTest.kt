@@ -1,4 +1,4 @@
-package net.serverpeon.twitcharchiver.fx.network
+package net.serverpeon.twitcharchiver.network
 
 import com.google.common.collect.Lists
 import com.google.common.util.concurrent.Uninterruptibles

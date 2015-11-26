@@ -15,7 +15,7 @@ fun <S, T> TableView<S>.column(
     val column = TableColumn<S, T>(label).apply {
         tooltip { label } //Set the tooltip to label by default
         isEditable = false
-        cellValueFactory = KCallback { source ->
+        cellValueFactory = Callback { source ->
             source.value.value()
         }
         this.init()
@@ -46,20 +46,20 @@ fun <S, T, N : Node> TableColumn<S, T>.renderer(
         @Suppress("UNUSED_PARAMETER") dummyClass: KClass<N>,
         render: TableCell<S, T>.(N?, T) -> N
 ) {
-    this.cellFactory = KCallback {
+    this.cellFactory = Callback {
         DelegateCell(render)
     }
 }
 
 fun <S, T> TableColumn<S, T>.textFormat(f: (T) -> String) {
-    this.cellFactory = KCallback {
+    this.cellFactory = Callback {
         SimpleCell(f)
     }
 }
 
 fun <S, T> TableColumn<S, T>.applyToCell(opts: TableCell<S, T>.() -> Unit) {
     val oldCellFactory = this.cellFactory
-    this.cellFactory = KCallback { column ->
+    this.cellFactory = Callback { column ->
         oldCellFactory.call(column).apply(opts)
     }
 }
@@ -95,11 +95,5 @@ private class DelegateCell<S, T, N : Node>(val render: TableCell<S, T>.(N?, T) -
                 graphic = newGraphic
             }
         }
-    }
-}
-
-class KCallback<P, R>(val f: (P) -> R) : Callback<P, R> {
-    override fun call(param: P): R {
-        return f(param)
     }
 }

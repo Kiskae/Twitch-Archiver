@@ -1,4 +1,4 @@
-package net.serverpeon.twitcharchiver.fx.network
+package net.serverpeon.twitcharchiver.network
 
 import javafx.concurrent.Service
 import javafx.concurrent.Task

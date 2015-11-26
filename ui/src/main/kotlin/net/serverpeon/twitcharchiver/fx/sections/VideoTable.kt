@@ -1,4 +1,4 @@
-package net.serverpeon.twitcharchiver.fx.table
+package net.serverpeon.twitcharchiver.fx.sections
 
 import javafx.beans.binding.Bindings
 import javafx.collections.FXCollections
@@ -12,6 +12,7 @@ import javafx.scene.layout.Background
 import javafx.scene.layout.BackgroundFill
 import javafx.scene.paint.Color
 import net.serverpeon.twitcharchiver.fx.*
+import net.serverpeon.twitcharchiver.network.DownloadableVod
 import java.text.DecimalFormat
 import java.text.MessageFormat
 import java.time.ZoneId
@@ -21,12 +22,12 @@ import java.time.format.DateTimeFormatterBuilder
 import java.time.format.TextStyle
 import java.time.temporal.ChronoField
 
-class VideoTable : TableView<VideoModel>() {
+class VideoTable : TableView<DownloadableVod>() {
 
     init {
         isEditable = true
 
-        column("D.", { shouldDownloadProp }) {
+        column("D.", { shouldDownload }) {
             isEditable = true
 
             renderer(CheckBox::class) { previousNode, newValue ->
@@ -50,9 +51,9 @@ class VideoTable : TableView<VideoModel>() {
             tooltip { "Download this Video" }
         }
 
-        column("Title", { vod.twitch.title.toFxObservable() })
+        column("Title", { title.toFxObservable() })
 
-        column("Length", { vod.twitch.length.toFxObservable() }) {
+        column("Length", { length.toFxObservable() }) {
             textFormat { duration ->
                 val hours = duration.toHours()
                 val minutes = duration.minusHours(hours).toMinutes()
@@ -61,13 +62,13 @@ class VideoTable : TableView<VideoModel>() {
             }
         }
 
-        column("Views", { vod.twitch.views.toFxObservable() }) {
+        column("Views", { views.toFxObservable() }) {
             applyToCell {
                 alignment = Pos.CENTER_RIGHT
             }
         }
 
-        column("Approximate Size @ 2.5 Mbps", { vod.approximateSize.toFxObservable() }) {
+        column("Approximate Size @ 2.5 Mbps", { approximateSize.toFxObservable() }) {
             textFormat { size ->
                 if (size > BYTES_PER_MEGABYTE) {
                     "${size / BYTES_PER_MEGABYTE} MB"
@@ -84,11 +85,11 @@ class VideoTable : TableView<VideoModel>() {
             }
         }
 
-        column("Recording Date", { vod.twitch.recordedAt.toFxObservable() }) {
+        column("Recording Date", { recordedAt.toFxObservable() }) {
             textFormat { moment -> INSTANT_FORMATTER.format(moment) }
         }
 
-        column("TP", { vod.parts.toFxObservable() }) {
+        column("TP", { parts.toFxObservable() }) {
             tooltip { "Total parts" }
 
             applyToCell {
@@ -133,7 +134,8 @@ class VideoTable : TableView<VideoModel>() {
                             onAction = object : EventHandler<ActionEvent> {
                                 override fun handle(event: ActionEvent?) {
                                     //TODO:
-                                    tableView.items[tableRow.index].startDownload()
+                                    println("Should download: ${tableView.items[tableRow.index]}")
+                                    //tableView.items[tableRow.index].startDownload()
                                 }
                             }
                         }
@@ -146,7 +148,7 @@ class VideoTable : TableView<VideoModel>() {
             }
         }
 
-        column("MP", { vod.mutedParts.toFxObservable() }) {
+        column("MP", { mutedParts.toFxObservable() }) {
             renderer(Label::class) { label, item ->
                 val bg = if (item > 0) Color.RED else Color.GREEN
                 background = Background(BackgroundFill(bg, null, Insets(1.0)))

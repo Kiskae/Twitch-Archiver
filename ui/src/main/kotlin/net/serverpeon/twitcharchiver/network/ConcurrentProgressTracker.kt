@@ -1,4 +1,4 @@
-package net.serverpeon.twitcharchiver.fx.network
+package net.serverpeon.twitcharchiver.network
 
 import com.google.common.collect.MapMaker
 import java.util.*

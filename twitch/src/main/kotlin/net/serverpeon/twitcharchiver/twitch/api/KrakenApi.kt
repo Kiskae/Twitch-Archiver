@@ -6,6 +6,7 @@ import retrofit.http.GET
 import retrofit.http.Path
 import retrofit.http.Query
 import java.time.Duration
+import java.time.ZonedDateTime
 
 /**
  * Codifies the requests and responses against the OFFICIAL Twitch API
@@ -48,6 +49,6 @@ interface KrakenApi {
                          val views: Long,
                          val length: Duration,
                          @SerializedName("_id") val internalId: String,
-                         @SerializedName("recorded_at") val recordedAt: String)
+                         @SerializedName("recorded_at") val recordedAt: ZonedDateTime)
     }
 }
