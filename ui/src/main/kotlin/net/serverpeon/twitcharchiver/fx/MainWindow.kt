@@ -8,8 +8,11 @@ import javafx.scene.layout.BorderPane
 import javafx.scene.layout.Region
 import net.serverpeon.twitcharchiver.fx.sections.*
 import net.serverpeon.twitcharchiver.network.ApiWrapper
+import net.serverpeon.twitcharchiver.network.DownloadableVod
 import net.serverpeon.twitcharchiver.twitch.OAuthToken
 import net.serverpeon.twitcharchiver.twitch.TwitchApi
+import net.serverpeon.twitcharchiver.twitch.api.KrakenApi
+import net.serverpeon.twitcharchiver.twitch.playlist.Playlist
 
 class MainWindow(token: OAuthToken) : BorderPane() {
     private val api = ApiWrapper(TwitchApi(token))
@@ -26,10 +29,10 @@ class MainWindow(token: OAuthToken) : BorderPane() {
 
         center = infoTable
         bottom = downloadPane.node()
-        right = createControlPane(token)
+        right = createControlPane(token, infoTable)
     }
 
-    private fun createControlPane(token: OAuthToken): Node {
+    private fun createControlPane(token: OAuthToken, table: VideoTable): Node {
         val sectionPadding = Insets(5.0, 5.0, 0.0, 5.0)
         return vbox {
             val oauth = OAuthInput(api, token)
@@ -39,7 +42,15 @@ class MainWindow(token: OAuthToken) : BorderPane() {
                 println("$old -> $new")
             }
 
-            +ChannelInput(oauth.usernameProp)
+            +ChannelInput(api, oauth.usernameProp, object : ChannelInput.VideoFeed {
+                override fun insertVideo(info: KrakenApi.VideoListResponse.Video, playlist: Playlist) {
+                    table.videos.add(DownloadableVod(info, playlist))
+                }
+
+                override fun resetFeed() {
+                    table.videos.clear()
+                }
+            })
 
             +TargetDirectoryInput()
 
