@@ -26,8 +26,18 @@ internal object TwitchHlsPlaylist {
         val videos = reduceVideos(actualPlaylist)
         return Playlist(
                 ImmutableList.copyOf(videos),
-                actualPlaylist[EXT_X_TWITCH_TOTAL_SECS]!!
+                actualPlaylist[EXT_X_TWITCH_TOTAL_SECS] ?: fallbackCalculateDuration(videos)
         )
+    }
+
+    private fun fallbackCalculateDuration(videos: List<Playlist.Video>): Duration {
+        if (videos.isEmpty()) {
+            return Duration.ZERO
+        } else {
+            return videos.map { it.length }.reduce { length1, length2 ->
+                length1.plus(length2)
+            }
+        }
     }
 
     private fun reduceVideos(videos: List<HlsPlaylist.Segment>): List<Playlist.Video> {

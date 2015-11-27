@@ -18,6 +18,7 @@ import net.serverpeon.twitcharchiver.twitch.errors.UnrecognizedVodFormatExceptio
 import net.serverpeon.twitcharchiver.twitch.json.DateTimeConverter
 import net.serverpeon.twitcharchiver.twitch.json.DurationConverter
 import net.serverpeon.twitcharchiver.twitch.playlist.Playlist
+import org.slf4j.LoggerFactory
 import retrofit.GsonConverterFactory
 import retrofit.Retrofit
 import rx.Observable
@@ -35,6 +36,7 @@ class TwitchApi(token: OAuthToken) {
         private val TWITCH_API_URL = HttpUrl.parse("https://api.twitch.tv/")
         private const val BROADCASTS_PER_REQUEST: Int = 100
         private const val TOP_QUALITY_STREAM: String = "chunked"
+        private val log = LoggerFactory.getLogger(TwitchApi::class.java)
     }
 
     private val gson: Gson = GsonBuilder().let {
@@ -47,10 +49,9 @@ class TwitchApi(token: OAuthToken) {
         interceptors().add(OAuthInterceptor(token))
         interceptors().add(object : Interceptor {
             override fun intercept(chain: Interceptor.Chain): com.squareup.okhttp.Response? {
-                println(chain.request().urlString())
+                log.info("Begin Request")
                 return chain.proceed(chain.request())
             }
-
         })
     }
 
@@ -63,6 +64,11 @@ class TwitchApi(token: OAuthToken) {
     private val krakenApi: KrakenApi by lazy { retrofit.create(KrakenApi::class.java) }
     private val internalApi: InternalApi by lazy { retrofit.create(InternalApi::class.java) }
 
+    private fun Throwable.isNotRetrofitCancelled(): Boolean {
+        // If Call.cancel() is called, an IOException with the message "Canceled" is thrown
+        return !"Canceled".equals(message)
+    }
+
     /**
      * Retrieves the user associated with the provided [OAuthToken]
      *
@@ -70,13 +76,20 @@ class TwitchApi(token: OAuthToken) {
      */
     @Throws(TwitchApiException::class, IOException::class)
     fun retrieveUser(): Single<Optional<String>> {
-        return krakenApi.authStatus().toRx().map { user ->
-            if (user.token?.valid ?: false) {
-                Optional.of(user.token!!.userName!!)
-            } else {
-                Optional.empty() //Is a bad token an error?
-            }
-        }
+        log.trace("retrieveUser()")
+        return krakenApi.authStatus()
+                .toRx()
+                .doOnError {
+                    if (it.isNotRetrofitCancelled())
+                        log.error("retrieveUser() failed", it)
+                }
+                .map { user ->
+                    if (user.token?.valid ?: false) {
+                        Optional.of(user.token!!.userName!!)
+                    } else {
+                        Optional.empty() //Is a bad token an error?
+                    }
+                }
     }
 
     /**
@@ -86,6 +99,7 @@ class TwitchApi(token: OAuthToken) {
     @Throws(IOException::class)
     fun videoList(channelName: String, limit: Int = -1): Observable<KrakenApi.VideoListResponse.Video> {
         require(limit != 0) { "Limit must be higher than 0" }
+        log.trace("videoList({}, {})", channelName, limit)
 
         if (limit > 0 && limit <= BROADCASTS_PER_REQUEST) {
             return krakenApi.videoList(channelName, limit = limit)
@@ -95,6 +109,10 @@ class TwitchApi(token: OAuthToken) {
         } else {
             return krakenApi.videoList(channelName)
                     .toRx()
+                    .doOnError {
+                        if (it.isNotRetrofitCancelled())
+                            log.error("videoList({}, {}) failed", channelName, limit, it)
+                    }
                     .toObservable()
                     .flatMap { response ->
                         val totalVideos = if (limit < 0) response.totalVideos else Math.min(limit, response.totalVideos)
@@ -126,6 +144,8 @@ class TwitchApi(token: OAuthToken) {
      */
     @Throws(TwitchApiException::class, IOException::class)
     fun loadPlaylist(broadcastId: String): Single<Playlist> {
+        log.trace("loadPlaylist({})", broadcastId)
+
         if (broadcastId.startsWith('a')) {
             //Old style video storage
             return retrieveLegacyPlaylist(broadcastId)
@@ -138,8 +158,14 @@ class TwitchApi(token: OAuthToken) {
     }
 
     private fun retrieveHlsPlaylist(broadcastId: Long): Single<Playlist> {
+        log.trace("retrieveHlsPlaylist({})", broadcastId)
+
         return internalApi.requestVodAccess(broadcastId)
                 .toRx()
+                .doOnError {
+                    if (it.isNotRetrofitCancelled())
+                        log.error("retrieveHlsPlaylist({}) failed", broadcastId, it)
+                }
                 .map { auth ->
                     val url = UsherApi.buildResourceUrl(broadcastId, auth)
                     try {
@@ -176,8 +202,14 @@ class TwitchApi(token: OAuthToken) {
     }
 
     private fun retrieveLegacyPlaylist(broadcastId: String): Single<Playlist> {
+        log.trace("retrieveLegacyPlaylist({})", broadcastId)
+
         return internalApi.videoData(broadcastId)
                 .toRx()
+                .doOnError {
+                    if (it.isNotRetrofitCancelled())
+                        log.error("retrieveLegacyPlaylist({}) failed", broadcastId, it)
+                }
                 .map { Playlist.loadLegacyPlaylist(it) }
     }
 }
