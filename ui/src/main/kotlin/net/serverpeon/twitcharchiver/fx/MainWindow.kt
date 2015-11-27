@@ -1,61 +1,38 @@
 package net.serverpeon.twitcharchiver.fx
 
-import javafx.beans.property.SimpleBooleanProperty
-import javafx.beans.property.SimpleDoubleProperty
 import javafx.geometry.Insets
-import javafx.scene.Node
+import javafx.scene.control.ScrollPane
 import javafx.scene.layout.BorderPane
 import javafx.scene.layout.Region
 import net.serverpeon.twitcharchiver.fx.sections.*
 import net.serverpeon.twitcharchiver.network.ApiWrapper
-import net.serverpeon.twitcharchiver.network.DownloadableVod
 import net.serverpeon.twitcharchiver.twitch.OAuthToken
 import net.serverpeon.twitcharchiver.twitch.TwitchApi
-import net.serverpeon.twitcharchiver.twitch.api.KrakenApi
-import net.serverpeon.twitcharchiver.twitch.playlist.Playlist
 
 class MainWindow(token: OAuthToken) : BorderPane() {
     private val api = ApiWrapper(TwitchApi(token))
+    private val targetDirectory = TargetDirectoryInput()
+    private val downloadControl = DownloadControl(api, targetDirectory.directoryProp)
+    private val dataTable: VideoTable = VideoTable(downloadControl)
+    private val downloadPane = DownloadPane(downloadControl, targetDirectory.directoryProp.isNotNull)
+
+    private val oauthPane = OAuthInput(api, token)
+    private val channelPane = ChannelInput(api, oauthPane.usernameProp, dataTable)
 
     init {
-        val infoTable = VideoTable()
-        val isDownloading = SimpleBooleanProperty(false)
-        val downloadPane = DownloadPane(api, isDownloading, SimpleDoubleProperty(-1.0))
+        targetDirectory.disableProperty().bind(downloadControl.isDownloadingProp) //Do not allow editing of path during a download
 
-        downloadPane.shouldDownloadProp.addListener { obs, old, new ->
-            println("Should download: $new")
-            isDownloading.set(new)
-        }
-
-        center = infoTable
+        center = ScrollPane(dataTable)
         bottom = downloadPane.node()
-        right = createControlPane(token, infoTable)
-    }
+        right = vbox {
+            +oauthPane
 
-    private fun createControlPane(token: OAuthToken, table: VideoTable): Node {
-        val sectionPadding = Insets(5.0, 5.0, 0.0, 5.0)
-        return vbox {
-            val oauth = OAuthInput(api, token)
-            +oauth
+            +channelPane
 
-            oauth.usernameProp.addListener { observableValue, old, new ->
-                println("$old -> $new")
-            }
-
-            +ChannelInput(api, oauth.usernameProp, object : ChannelInput.VideoFeed {
-                override fun insertVideo(info: KrakenApi.VideoListResponse.Video, playlist: Playlist) {
-                    table.videos.add(DownloadableVod(info, playlist))
-                }
-
-                override fun resetFeed() {
-                    table.videos.clear()
-                }
-            })
-
-            +TargetDirectoryInput()
+            +targetDirectory
 
             forEach<Region> {
-                padding = sectionPadding
+                padding = Insets(5.0, 5.0, 0.0, 5.0)
             }
         }
     }

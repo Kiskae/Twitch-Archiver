@@ -9,13 +9,18 @@ import javafx.event.ActionEvent
 import javafx.event.EventHandler
 import javafx.geometry.Insets
 import javafx.geometry.Pos
+import javafx.scene.Group
 import javafx.scene.Node
+import javafx.scene.Scene
 import javafx.scene.control.*
 import javafx.scene.layout.Background
 import javafx.scene.layout.BackgroundFill
 import javafx.scene.paint.Color
+import javafx.scene.text.Text
 import net.serverpeon.twitcharchiver.fx.*
 import net.serverpeon.twitcharchiver.network.DownloadableVod
+import net.serverpeon.twitcharchiver.twitch.api.KrakenApi
+import net.serverpeon.twitcharchiver.twitch.playlist.Playlist
 import java.text.DecimalFormat
 import java.text.MessageFormat
 import java.time.Instant
@@ -27,13 +32,26 @@ import java.time.format.TextStyle
 import java.time.temporal.ChronoField
 import java.util.*
 
-class VideoTable(val videos: ObservableList<DownloadableVod> = FXCollections.observableArrayList()) : TableView<DownloadableVod>() {
+class VideoTable(val downloadControl: DownloadControl) : TableView<DownloadableVod>(), ChannelInput.VideoFeed {
+    private val videos: ObservableList<DownloadableVod> = FXCollections.observableArrayList()
+
+    override fun resetFeed() {
+        this.videos.clear()
+    }
+
+    override fun insertVideo(info: KrakenApi.VideoListResponse.Video, playlist: Playlist) {
+        this.videos.add(downloadControl.createVideo(info, playlist))
+    }
+
+    fun selectedVideos(): List<DownloadableVod> {
+        return videos.filter { it.shouldDownload.get() }
+    }
 
     init {
         isEditable = true
 
         column("D.", { shouldDownload }) {
-            isEditable = true
+            editableProperty().bind(downloadControl.isDownloadingProp.not())
 
             renderer(CheckBox::class) { previousNode, newValue ->
                 if (previousNode != null) {
@@ -53,10 +71,12 @@ class VideoTable(val videos: ObservableList<DownloadableVod> = FXCollections.obs
                 alignment = Pos.CENTER
             }
 
+            maxWidth = 3 * EM
+
             tooltip { "Download this Video" }
         }
 
-        column("Title", { title.toFxObservable() })
+        val title = column("Title", { title.toFxObservable() })
 
         column("Length", { length.toFxObservable() }) {
             textFormat { duration ->
@@ -97,6 +117,8 @@ class VideoTable(val videos: ObservableList<DownloadableVod> = FXCollections.obs
         column("TP", { parts.toFxObservable() }) {
             tooltip { "Total parts" }
 
+            maxWidth = 4 * EM
+
             applyToCell {
                 alignment = Pos.CENTER_RIGHT
             }
@@ -105,6 +127,8 @@ class VideoTable(val videos: ObservableList<DownloadableVod> = FXCollections.obs
         column("DP", { downloadedParts }) {
             tooltip { "Downloaded parts" }
 
+            maxWidth = 4 * EM
+
             applyToCell {
                 alignment = Pos.CENTER_RIGHT
             }
@@ -112,6 +136,8 @@ class VideoTable(val videos: ObservableList<DownloadableVod> = FXCollections.obs
 
         column("FP", { failedParts }) {
             tooltip { "Failed to download parts" }
+
+            maxWidth = 4 * EM
 
             applyToCell {
                 alignment = Pos.CENTER_RIGHT
@@ -160,6 +186,8 @@ class VideoTable(val videos: ObservableList<DownloadableVod> = FXCollections.obs
                 label ?: Label(item.toString())
             }
 
+            maxWidth = 4 * EM
+
             applyToCell {
                 alignment = Pos.CENTER
             }
@@ -179,6 +207,12 @@ class VideoTable(val videos: ObservableList<DownloadableVod> = FXCollections.obs
     }
 
     companion object {
+        private val EM: Double = Text("m").let {
+            Scene(Group(it))
+            it.applyCss()
+            it.layoutBounds.width
+        }
+
         private const val BYTES_PER_KILOBYTE = 1000
         private const val BYTES_PER_MEGABYTE = BYTES_PER_KILOBYTE * 1000
 

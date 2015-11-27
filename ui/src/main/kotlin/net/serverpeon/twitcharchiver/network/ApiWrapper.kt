@@ -34,6 +34,16 @@ class ApiWrapper(private val api: TwitchApi) {
         }
     }
 
+    fun lock(lockObj: Any): AutoCloseable? {
+        if (setLock(lockObj)) {
+            return AutoCloseable {
+                setLock(null)
+            }
+        } else {
+            return null
+        }
+    }
+
     private fun setLock(value: Any?): Boolean {
         log.debug("Api lock: {} -> {}", ownerLock, value)
         val success = if (value != null) {

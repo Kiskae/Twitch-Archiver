@@ -23,7 +23,7 @@ import rx.Subscription
 
 class ChannelInput(val api: ApiWrapper, username: ReadOnlyStringProperty, val feed: ChannelInput.VideoFeed) : TitledPane() {
     companion object {
-        private val DEBUG_USER: ReadOnlyStringProperty = SimpleStringProperty("lirik")
+        private val DEBUG_USER: ReadOnlyStringProperty = SimpleStringProperty(null)
     }
 
     private val selectedUser = When(DEBUG_USER.isNotNull).then(DEBUG_USER).otherwise(username)

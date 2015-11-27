@@ -168,6 +168,7 @@ class TwitchApi(token: OAuthToken) {
                 }
                 .map { auth ->
                     val url = UsherApi.buildResourceUrl(broadcastId, auth)
+                    log.debug("Loading variant playlist for {}: {}", broadcastId, url)
                     try {
                         val variants = HlsParser.parseVariantPlaylist(
                                 url.uri(),
@@ -180,6 +181,7 @@ class TwitchApi(token: OAuthToken) {
                             "Best quality stream is not '$TOP_QUALITY_STREAM', something is wrong"
                         }
 
+                        log.debug("Loading stream playlist for {}: {}", broadcastId, bestQualityStream.uri)
                         Playlist.loadHlsPlaylist(bestQualityStream)
                     } catch (ex: IOException) {
                         val restrictedBitrates = gson.fromJson(auth.token, TwitchToken::class.java)
