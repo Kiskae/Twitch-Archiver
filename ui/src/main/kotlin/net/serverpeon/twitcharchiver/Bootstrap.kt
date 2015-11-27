@@ -8,6 +8,9 @@ import net.serverpeon.twitcharchiver.fx.MainWindow
 import net.serverpeon.twitcharchiver.twitch.OAuthToken
 
 class Bootstrap : Application() {
+    override fun stop() {
+        System.exit(0)
+    }
 
     override fun start(stage: Stage) {
         val token = OAuthToken(parameters.named["oauth"])
