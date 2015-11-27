@@ -44,10 +44,11 @@ fun <S, T> TableColumn<S, T>.tooltip(label: () -> String) {
 
 fun <S, T, N : Node> TableColumn<S, T>.renderer(
         @Suppress("UNUSED_PARAMETER") dummyClass: KClass<N>,
+        clear: TableCell<S, T>.() -> Unit = {},
         render: TableCell<S, T>.(N?, T) -> N
 ) {
     this.cellFactory = Callback {
-        DelegateCell(render)
+        DelegateCell(render, clear)
     }
 }
 
@@ -76,7 +77,10 @@ private class SimpleCell<S, T>(val format: (T) -> String) : TableCell<S, T>() {
     }
 }
 
-private class DelegateCell<S, T, N : Node>(val render: TableCell<S, T>.(N?, T) -> N) : TableCell<S, T>() {
+private class DelegateCell<S, T, N : Node>(
+        val render: TableCell<S, T>.(N?, T) -> N,
+        val clear: TableCell<S, T>.() -> Unit
+) : TableCell<S, T>() {
 
     init {
         text = null
@@ -88,6 +92,7 @@ private class DelegateCell<S, T, N : Node>(val render: TableCell<S, T>.(N?, T) -
         text = null
         if (empty) {
             graphic = null
+            this.clear()
         } else {
             @Suppress("UNCHECKED_CAST")
             val newGraphic = this.render(graphic as N?, item)

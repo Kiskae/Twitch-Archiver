@@ -1,7 +1,10 @@
 package net.serverpeon.twitcharchiver.fx.sections
 
 import javafx.beans.binding.Bindings
+import javafx.beans.binding.When
 import javafx.collections.FXCollections
+import javafx.collections.ObservableList
+import javafx.collections.transformation.SortedList
 import javafx.event.ActionEvent
 import javafx.event.EventHandler
 import javafx.geometry.Insets
@@ -15,14 +18,16 @@ import net.serverpeon.twitcharchiver.fx.*
 import net.serverpeon.twitcharchiver.network.DownloadableVod
 import java.text.DecimalFormat
 import java.text.MessageFormat
+import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeFormatterBuilder
 import java.time.format.TextStyle
 import java.time.temporal.ChronoField
+import java.util.*
 
-class VideoTable : TableView<DownloadableVod>() {
+class VideoTable(val videos: ObservableList<DownloadableVod> = FXCollections.observableArrayList()) : TableView<DownloadableVod>() {
 
     init {
         isEditable = true
@@ -149,7 +154,7 @@ class VideoTable : TableView<DownloadableVod>() {
         }
 
         column("MP", { mutedParts.toFxObservable() }) {
-            renderer(Label::class) { label, item ->
+            renderer(Label::class, { background = null }) { label, item ->
                 val bg = if (item > 0) Color.RED else Color.GREEN
                 background = Background(BackgroundFill(bg, null, Insets(1.0)))
                 label ?: Label(item.toString())
@@ -162,7 +167,15 @@ class VideoTable : TableView<DownloadableVod>() {
             tooltip { "Muted parts" }
         }
 
-        this.items = FXCollections.observableArrayList()
+        val tableComparator = comparatorProperty()
+        val defaultComparator = Comparator.comparing<DownloadableVod, Instant> { it.recordedAt }.reversed()
+        this.items = SortedList(videos).apply {
+            comparatorProperty().bind(
+                    When(tableComparator.isNotNull)
+                            .then(tableComparator)
+                            .otherwise(defaultComparator)
+            )
+        }
     }
 
     companion object {
