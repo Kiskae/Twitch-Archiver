@@ -62,6 +62,7 @@ class ChannelInput(val api: ApiWrapper, username: ReadOnlyStringProperty, val fe
                 +Label("Video Limit").apply {
                     padding = Insets(0.0, 5.0, 0.0, 0.0)
                 }
+
                 +Spinner(NonZeroSpinner(-1, Int.MAX_VALUE)).apply {
                     videoLimit.bind(valueProperty())
                     disableProperty().bind(loadingVideos)

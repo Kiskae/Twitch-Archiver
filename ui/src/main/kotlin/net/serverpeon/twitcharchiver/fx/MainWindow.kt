@@ -12,7 +12,11 @@ import net.serverpeon.twitcharchiver.twitch.TwitchApi
 class MainWindow(token: OAuthToken) : BorderPane() {
     private val api = ApiWrapper(TwitchApi(token))
     private val targetDirectory = TargetDirectoryInput()
-    private val downloadControl = DownloadControl(api, targetDirectory.directoryProp)
+    private val parallelismPanel = ParallelismPane()
+    private val downloadControl = DownloadControl(api, targetDirectory.directoryProp, parallelismPanel.parallelismProp) {
+        dataTable.selectedVideos() //Retrieve the selected videos
+    }
+
     private val dataTable: VideoTable = VideoTable(downloadControl)
     private val downloadPane = DownloadPane(downloadControl, targetDirectory.directoryProp.isNotNull)
 
@@ -20,7 +24,9 @@ class MainWindow(token: OAuthToken) : BorderPane() {
     private val channelPane = ChannelInput(api, oauthPane.usernameProp, dataTable)
 
     init {
-        targetDirectory.disableProperty().bind(downloadControl.isDownloadingProp) //Do not allow editing of path during a download
+        //Do not allow editing of path or parallelism during a download
+        targetDirectory.disableProperty().bind(downloadControl.isDownloadingProp)
+        parallelismPanel.disableProperty().bind(downloadControl.isDownloadingProp)
 
         center = ScrollPane(dataTable)
         bottom = downloadPane.node()
@@ -30,6 +36,8 @@ class MainWindow(token: OAuthToken) : BorderPane() {
             +channelPane
 
             +targetDirectory
+
+            +parallelismPanel
 
             forEach<Region> {
                 padding = Insets(5.0, 5.0, 0.0, 5.0)

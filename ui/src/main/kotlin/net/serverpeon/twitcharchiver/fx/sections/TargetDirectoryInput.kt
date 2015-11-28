@@ -44,7 +44,7 @@ class TargetDirectoryInput : TitledPane() {
                     override fun changed(observable: ObservableValue<out Number>, oldValue: Number, newValue: Number) {
                         // Ensure the label never causes the vbox to expand....
                         if (oldValue == 0.0 && newValue.toDouble() > 0.0) {
-                            maxWidth = newValue.toDouble() - 40
+                            maxWidth = newValue.toDouble() - 40 // scientifically determined
                             boxWidth.removeListener(this)
                         }
                     }
@@ -57,12 +57,16 @@ class TargetDirectoryInput : TitledPane() {
                 onAction = EventHandler {
                     val directoryPicker = DirectoryChooser()
                     directoryPicker.title = "Choose download directory"
-                    directoryPicker.initialDirectory = (directory.get() ?: Paths.get(System.getProperty("user.dir"))).toFile()
+                    directoryPicker.initialDirectory = (directory.get() ?: USER_DIR).toFile()
                     directoryPicker.showDialog(scene.window)?.let {
                         directory.set(it.toPath())
                     }
                 }
             }
         }
+    }
+
+    companion object {
+        private val USER_DIR: Path by lazy { Paths.get(System.getProperty("user.dir")) }
     }
 }

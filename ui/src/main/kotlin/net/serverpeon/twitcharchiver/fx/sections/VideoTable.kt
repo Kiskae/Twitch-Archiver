@@ -43,7 +43,7 @@ class VideoTable(val downloadControl: DownloadControl) : TableView<DownloadableV
     }
 
     fun selectedVideos(): List<DownloadableVod> {
-        return videos.filter { it.shouldDownload.get() }
+        return videos.filter { it.shouldDownload.value }
     }
 
     init {
@@ -53,13 +53,11 @@ class VideoTable(val downloadControl: DownloadControl) : TableView<DownloadableV
             editableProperty().bind(downloadControl.isDownloadingProp.not())
 
             renderer(CheckBox::class) { previousNode, newValue ->
-                if (previousNode != null) {
-                    previousNode.apply { isSelected = newValue }
-                } else {
-                    CheckBox().apply {
-                        isSelected = newValue
-                    }
-                }.apply {
+                (previousNode ?: CheckBox().apply {
+                    rowValue().shouldDownload.bind(selectedProperty())
+                }).apply {
+                    isSelected = newValue
+
                     disableProperty().bind(Bindings.not(
                             tableView.editableProperty().and(
                                     tableColumn.editableProperty())))

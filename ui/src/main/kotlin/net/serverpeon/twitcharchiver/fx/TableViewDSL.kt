@@ -42,6 +42,10 @@ fun <S, T> TableColumn<S, T>.tooltip(label: () -> String) {
     }
 }
 
+fun <S, T> TableCell<S, T>.rowValue(): S {
+    return tableView.items[tableRow.index]
+}
+
 fun <S, T, N : Node> TableColumn<S, T>.renderer(
         @Suppress("UNUSED_PARAMETER") dummyClass: KClass<N>,
         clear: TableCell<S, T>.() -> Unit = {},

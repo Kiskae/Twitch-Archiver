@@ -1,16 +1,28 @@
 package net.serverpeon.twitcharchiver.network
 
-import javafx.beans.property.*
+import javafx.beans.property.BooleanProperty
+import javafx.beans.property.ReadOnlyDoubleProperty
+import javafx.beans.property.ReadOnlyIntegerProperty
+import javafx.beans.property.SimpleBooleanProperty
+import net.serverpeon.twitcharchiver.network.tracker.TrackerInfo
 import net.serverpeon.twitcharchiver.twitch.api.KrakenApi
 import net.serverpeon.twitcharchiver.twitch.playlist.Playlist
 import java.time.Duration
 import java.time.Instant
 
-data class DownloadableVod(val twitchData: KrakenApi.VideoListResponse.Video, val playlist: Playlist) { //TODO: LocalData
-    val downloadProgress: ReadOnlyDoubleProperty = SimpleDoubleProperty(0.0) // Link to download service
-    val shouldDownload: ReadOnlyBooleanProperty = SimpleBooleanProperty() // Used to select videos
-    val downloadedParts: ReadOnlyIntegerProperty = SimpleIntegerProperty(0) // Link to local data?
-    val failedParts: ReadOnlyIntegerProperty = SimpleIntegerProperty(0) // Link to local data
+data class DownloadableVod(val twitchData: KrakenApi.VideoListResponse.Video,
+                           val playlist: Playlist,
+                           val tracker: TrackerInfo) {
+    val shouldDownload: BooleanProperty = SimpleBooleanProperty(tracker.hasPriorData)
+
+    val downloadProgress: ReadOnlyDoubleProperty
+        get() = tracker.downloadProgressProp
+
+    val downloadedParts: ReadOnlyIntegerProperty
+        get() = tracker.downloadedPartsProp
+
+    val failedParts: ReadOnlyIntegerProperty
+        get() = tracker.failedPartsProp
 
     val title: String
         get() = twitchData.title
