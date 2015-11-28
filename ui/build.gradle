@@ -9,3 +9,17 @@ dependencies {
     compile 'org.slf4j:slf4j-simple:1.7.13'
     compile 'org.slf4j:slf4j-api:1.7.13'
 }
+
+task fatJar(type: Jar) {
+    manifest {
+        attributes 'Main-Class': 'net.serverpeon.twitcharchiver.Bootstrap'
+    }
+
+    baseName = rootProject.name + '-all'
+    from {configurations.compile.collect {it.isDirectory() ? it : zipTree(it)}}
+    with jar
+}
+
+configure(fatJar) {
+    group = 'build'
+}

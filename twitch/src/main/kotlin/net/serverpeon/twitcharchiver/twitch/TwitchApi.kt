@@ -175,6 +175,7 @@ class TwitchApi(token: OAuthToken) {
                                 Resources.asCharSource(url.url(), Charsets.UTF_8),
                                 TagRepository.DEFAULT
                         )
+                        log.debug("Available qualities: {}", variants.map { Pair(it.info.video, it.info.bandwidth) })
                         val bestQualityStream = variants.sortedByDescending { it.info.bandwidth }.first()
 
                         check(bestQualityStream.info.video?.equals(TOP_QUALITY_STREAM) ?: false) {

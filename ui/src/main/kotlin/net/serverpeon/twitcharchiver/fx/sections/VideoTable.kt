@@ -4,7 +4,6 @@ import javafx.beans.binding.Bindings
 import javafx.beans.binding.When
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
-import javafx.collections.transformation.SortedList
 import javafx.event.ActionEvent
 import javafx.event.EventHandler
 import javafx.geometry.Insets
@@ -76,7 +75,7 @@ class VideoTable(val downloadControl: DownloadControl) : TableView<DownloadableV
             tooltip { "Download this Video" }
         }
 
-        val title = column("Title", { title.toFxObservable() })
+        column("Title", { title.toFxObservable() })
 
         column("Length", { length.toFxObservable() }) {
             textFormat { duration ->
@@ -197,7 +196,7 @@ class VideoTable(val downloadControl: DownloadControl) : TableView<DownloadableV
 
         val tableComparator = comparatorProperty()
         val defaultComparator = Comparator.comparing<DownloadableVod, Instant> { it.recordedAt }.reversed()
-        this.items = SortedList(videos).apply {
+        this.items = videos.sorted().apply {
             comparatorProperty().bind(
                     When(tableComparator.isNotNull)
                             .then(tableComparator)

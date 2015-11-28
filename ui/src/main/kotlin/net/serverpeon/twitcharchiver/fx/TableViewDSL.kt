@@ -92,10 +92,10 @@ private class DelegateCell<S, T, N : Node>(
         text = null
         if (empty) {
             graphic = null
-            this.clear()
+            (this.clear)()
         } else {
             @Suppress("UNCHECKED_CAST")
-            val newGraphic = this.render(graphic as N?, item)
+            val newGraphic = (this.render)(graphic as N?, item)
             if (newGraphic !== graphic) {
                 graphic = newGraphic
             }
