@@ -1,5 +1,8 @@
 package net.serverpeon.twitcharchiver.fx
 
+import javafx.beans.binding.ObjectBinding
+import javafx.beans.property.Property
+import javafx.beans.value.ObservableValue
 import javafx.geometry.Orientation
 import javafx.scene.Node
 import javafx.scene.layout.HBox
@@ -19,6 +22,18 @@ fun Region.stretch(orientation: Orientation) {
             maxHeight = Double.MAX_VALUE
         }
     }
+}
+
+fun <P, T> Property<P>.bindTransform(obs: ObservableValue<T>, func: (T) -> P) {
+    this.bind(object : ObjectBinding<P>() {
+        init {
+            bind(obs)
+        }
+
+        override fun computeValue(): P {
+            return func(obs.value)
+        }
+    })
 }
 
 fun vbox(block: NodeDSL<VBox>.() -> Unit): VBox {
