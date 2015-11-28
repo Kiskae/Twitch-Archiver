@@ -27,6 +27,7 @@ class DownloadControl(val api: ApiWrapper, directory: ReadOnlyObjectProperty<Pat
 
     fun stopDownload() {
         obs?.apply {
+            close()
             obs = null
             isDownloading.set(false)
         }

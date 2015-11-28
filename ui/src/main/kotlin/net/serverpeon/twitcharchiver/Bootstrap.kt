@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory
 
 class Bootstrap : Application() {
     override fun stop() {
+        LoggerFactory.getLogger(javaClass).info("Shutting down")
         System.exit(0)
     }
 

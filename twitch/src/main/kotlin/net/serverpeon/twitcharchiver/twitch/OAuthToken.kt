@@ -1,10 +1,24 @@
 package net.serverpeon.twitcharchiver.twitch
 
+import org.slf4j.LoggerFactory
+
 /**
  * Wrapper object which protects the OAuth token during runtime.
  * It prevents accidental logging of the OAuth token.
  */
-class OAuthToken(var value: String?) {
+class OAuthToken(initialValue: String?) {
+    var value: String? = initialValue
+        set(v: String?) {
+            if (v != field) {
+                log.debug("OAuth token {}, value set to {}", System.identityHashCode(this), readValue(v))
+                field = v
+            }
+        }
+
+    init {
+        log.debug("OAuth token {} created, initial value: {}", System.identityHashCode(this), readValue(value))
+    }
+
     /**
      * Checks whether the token is currently set
      */
@@ -24,6 +38,14 @@ class OAuthToken(var value: String?) {
     }
 
     override fun toString(): String {
-        return "OAuth{${value?.replaceRange(4, value!!.length, "*")}}"
+        return "OAuth{${readValue(value)}}"
+    }
+
+    private fun readValue(value: String?): String? {
+        return value?.let { it.replaceRange(4, it.length - 4, "****") }
+    }
+
+    companion object {
+        private val log = LoggerFactory.getLogger(OAuthToken::class.java)
     }
 }

@@ -46,6 +46,7 @@ class ApiWrapper(private val api: TwitchApi) {
 
     private fun setLock(value: Any?): Boolean {
         log.debug("Api lock: {} -> {}", ownerLock, value)
+
         val success = if (value != null) {
             ownerLock.compareAndSet(null, value)
         } else {
