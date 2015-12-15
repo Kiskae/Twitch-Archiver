@@ -11,10 +11,7 @@ import net.serverpeon.twitcharchiver.twitch.api.KrakenApi
 import net.serverpeon.twitcharchiver.twitch.playlist.Playlist
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
-import java.util.concurrent.CancellationException
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ForkJoinPool
-import java.util.concurrent.ForkJoinTask
+import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicBoolean
 
 class DownloadControl(val api: ApiWrapper,
@@ -44,7 +41,7 @@ class DownloadControl(val api: ApiWrapper,
     fun beginDownload() {
         val vods = getVods().toArrayList()
         val client = OkHttpClient().apply {
-
+            setReadTimeout(0, TimeUnit.MILLISECONDS)
         }
 
         check(null == downloadInProgress) {

@@ -159,9 +159,11 @@ class VideoTable(val downloadControl: DownloadControl) : TableView<DownloadableV
                                 Insets(0.0, 10.0, 0.0, 10.0)
                             }
                             onAction = EventHandler<javafx.event.ActionEvent> {
-                                //TODO:
-                                println("Should download: ${tableView.items[tableRow.index]}")
-                                //tableView.items[tableRow.index].startDownload()
+                                println("Should download: ${tableView.items[tableRow.index].tracker.partFiles()}")
+                                Alert(Alert.AlertType.INFORMATION).apply {
+                                    contentText = "Merging is not yet done, please understand!"
+                                    show()
+                                }
                             }
                         }
                     }

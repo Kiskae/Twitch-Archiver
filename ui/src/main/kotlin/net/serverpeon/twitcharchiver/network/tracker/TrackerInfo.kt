@@ -72,6 +72,16 @@ class TrackerInfo(val dataDirectory: ReadOnlyObjectProperty<Path?>, val playlist
         return ForkJoinDownloader.create(partsToDownload, monitor)
     }
 
+    data class VideoSegments(val base: Path, val parts: List<String>)
+
+    fun partFiles(): VideoSegments? {
+        return dataDirectory.get()?.let { directory ->
+            VideoSegments(directory, playlist.videos.mapIndexed { idx, video ->
+                video.toFilename(idx)
+            })
+        }
+    }
+
     private fun Playlist.Video.toFilename(idx: Int): String {
         val ext = Files.getFileExtension(this.resource.encodedPath())
         return "part$idx.$ext"
