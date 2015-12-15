@@ -1,28 +1,25 @@
 package net.serverpeon.twitcharchiver.network
 
 import javafx.beans.property.BooleanProperty
-import javafx.beans.property.ReadOnlyDoubleProperty
-import javafx.beans.property.ReadOnlyIntegerProperty
 import javafx.beans.property.SimpleBooleanProperty
+import javafx.beans.value.ObservableValue
 import net.serverpeon.twitcharchiver.network.tracker.TrackerInfo
 import net.serverpeon.twitcharchiver.twitch.api.KrakenApi
-import net.serverpeon.twitcharchiver.twitch.playlist.Playlist
 import java.time.Duration
 import java.time.Instant
 
 data class DownloadableVod(val twitchData: KrakenApi.VideoListResponse.Video,
-                           val playlist: Playlist,
                            val tracker: TrackerInfo) {
     val shouldDownload: BooleanProperty = SimpleBooleanProperty(tracker.hasPriorData)
 
-    val downloadProgress: ReadOnlyDoubleProperty
-        get() = tracker.downloadProgressProp
+    val downloadProgress: ObservableValue<Double>
+        get() = tracker.downloadProgressProp.asObject()
 
-    val downloadedParts: ReadOnlyIntegerProperty
-        get() = tracker.downloadedPartsProp
+    val downloadedParts: ObservableValue<Int>
+        get() = tracker.downloadedParts
 
-    val failedParts: ReadOnlyIntegerProperty
-        get() = tracker.failedPartsProp
+    val failedParts: ObservableValue<Int>
+        get() = tracker.failedParts
 
     val title: String
         get() = twitchData.title
@@ -43,8 +40,8 @@ data class DownloadableVod(val twitchData: KrakenApi.VideoListResponse.Video,
         get() = twitchData.recordedAt.toInstant()
 
     val parts: Int
-        get() = playlist.parts()
+        get() = tracker.playlist.parts()
 
     val mutedParts: Int
-        get() = playlist.mutedParts()
+        get() = tracker.playlist.mutedParts()
 }

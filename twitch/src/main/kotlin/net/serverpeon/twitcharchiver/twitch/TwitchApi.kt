@@ -47,11 +47,9 @@ class TwitchApi(token: OAuthToken) {
 
     private val client: OkHttpClient = OkHttpClient().apply {
         interceptors().add(OAuthInterceptor(token))
-        interceptors().add(object : Interceptor {
-            override fun intercept(chain: Interceptor.Chain): com.squareup.okhttp.Response? {
-                log.info("Begin Request")
-                return chain.proceed(chain.request())
-            }
+        interceptors().add(Interceptor { chain ->
+            log.info("Begin Request")
+            chain.proceed(chain.request())
         })
     }
 

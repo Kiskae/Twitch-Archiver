@@ -1,13 +1,11 @@
 package net.serverpeon.twitcharchiver.network
 
-import javafx.application.Platform
 import javafx.beans.binding.BooleanBinding
 import javafx.beans.property.SimpleObjectProperty
+import net.serverpeon.twitcharchiver.ReactiveFx
 import net.serverpeon.twitcharchiver.twitch.TwitchApi
 import org.slf4j.LoggerFactory
 import rx.Observable
-import rx.Scheduler
-import rx.schedulers.Schedulers
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
@@ -25,7 +23,7 @@ class ApiWrapper(private val api: TwitchApi) {
         if (setLock(lockObj)) {
             return api.f()
                     .doOnError { log.warn("Error in request", it) }
-                    .observeOn(schedulerFx)
+                    .observeOn(ReactiveFx.scheduler)
                     .doOnUnsubscribe { // Create request and unlock
                         check(setLock(null))
                     }
@@ -59,9 +57,5 @@ class ApiWrapper(private val api: TwitchApi) {
         } else {
             return false;
         }
-    }
-
-    private val schedulerFx: Scheduler by lazy {
-        Schedulers.from { Platform.runLater(it) }
     }
 }

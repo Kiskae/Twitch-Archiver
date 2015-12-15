@@ -4,7 +4,6 @@ import javafx.beans.binding.Bindings
 import javafx.beans.binding.When
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
-import javafx.event.ActionEvent
 import javafx.event.EventHandler
 import javafx.geometry.Insets
 import javafx.geometry.Pos
@@ -141,7 +140,7 @@ class VideoTable(val downloadControl: DownloadControl) : TableView<DownloadableV
             }
         }
 
-        column("Download Progress", { downloadProgress.asObject() }) {
+        column("Download Progress", { downloadProgress }) {
             renderer(Node::class) { previousNode, progress ->
                 if (progress < 1) {
                     @Suppress("USELESS_CAST")
@@ -159,12 +158,10 @@ class VideoTable(val downloadControl: DownloadControl) : TableView<DownloadableV
                             padding = padding.let { oldPadding ->
                                 Insets(0.0, 10.0, 0.0, 10.0)
                             }
-                            onAction = object : EventHandler<ActionEvent> {
-                                override fun handle(event: ActionEvent?) {
-                                    //TODO:
-                                    println("Should download: ${tableView.items[tableRow.index]}")
-                                    //tableView.items[tableRow.index].startDownload()
-                                }
+                            onAction = EventHandler<javafx.event.ActionEvent> {
+                                //TODO:
+                                println("Should download: ${tableView.items[tableRow.index]}")
+                                //tableView.items[tableRow.index].startDownload()
                             }
                         }
                     }

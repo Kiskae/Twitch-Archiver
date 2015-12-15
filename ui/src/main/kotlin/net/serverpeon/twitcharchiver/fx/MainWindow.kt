@@ -1,7 +1,6 @@
 package net.serverpeon.twitcharchiver.fx
 
 import javafx.geometry.Insets
-import javafx.scene.control.ScrollPane
 import javafx.scene.layout.BorderPane
 import javafx.scene.layout.Region
 import net.serverpeon.twitcharchiver.fx.sections.*
@@ -28,7 +27,7 @@ class MainWindow(token: OAuthToken) : BorderPane() {
         targetDirectory.disableProperty().bind(downloadControl.isDownloadingProp)
         parallelismPanel.disableProperty().bind(downloadControl.isDownloadingProp)
 
-        center = ScrollPane(dataTable)
+        center = dataTable
         bottom = downloadPane.node()
         right = vbox {
             +oauthPane

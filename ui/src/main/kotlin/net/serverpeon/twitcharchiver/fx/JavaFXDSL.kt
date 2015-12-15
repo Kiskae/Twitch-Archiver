@@ -2,6 +2,8 @@ package net.serverpeon.twitcharchiver.fx
 
 import javafx.beans.binding.ObjectBinding
 import javafx.beans.property.Property
+import javafx.beans.property.ReadOnlyObjectProperty
+import javafx.beans.property.SimpleObjectProperty
 import javafx.beans.value.ObservableValue
 import javafx.geometry.Orientation
 import javafx.scene.Node
@@ -34,6 +36,12 @@ fun <P, T> Property<P>.bindTransform(obs: ObservableValue<T>, func: (T) -> P) {
             return func(obs.value)
         }
     })
+}
+
+fun <P, T> transformObservable(obs: ObservableValue<T>, func: (T) -> P): ReadOnlyObjectProperty<P> {
+    return SimpleObjectProperty<P>().apply {
+        bindTransform(obs, func)
+    }
 }
 
 fun vbox(block: NodeDSL<VBox>.() -> Unit): VBox {
