@@ -41,7 +41,7 @@ class DownloadControl(val api: ApiWrapper,
     fun beginDownload() {
         val vods = getVods().toArrayList()
         val client = OkHttpClient().apply {
-            setReadTimeout(0, TimeUnit.MILLISECONDS)
+            setReadTimeout(1, TimeUnit.MINUTES)
         }
 
         check(null == downloadInProgress) {
