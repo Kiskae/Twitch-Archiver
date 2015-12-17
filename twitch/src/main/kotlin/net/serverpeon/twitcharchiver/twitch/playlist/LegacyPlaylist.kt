@@ -7,6 +7,8 @@ import java.time.Duration
 import java.util.*
 
 internal object LegacyPlaylist {
+    private val LEGACY_ENCODING_PROPS = EncodingDescription(ImmutableList.of(), EncodingDescription.IOType.FILE_CONCAT)
+
     fun load(source: InternalApi.LegacyVideoSource): Optional<Playlist> {
         val videos = source.chunks.live.map {
             Playlist.Video(
@@ -19,7 +21,8 @@ internal object LegacyPlaylist {
         if (videos.isNotEmpty()) {
             return Optional.of(Playlist(
                     ImmutableList.copyOf(videos),
-                    Duration.ofSeconds(source.duration)
+                    Duration.ofSeconds(source.duration),
+                    LEGACY_ENCODING_PROPS
             ))
         } else {
             return Optional.empty()

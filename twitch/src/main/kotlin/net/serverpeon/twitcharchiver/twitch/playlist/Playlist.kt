@@ -8,7 +8,7 @@ import java.time.Duration
 /**
  * Playlist of videos for a broadcast on Twitch
  */
-data class Playlist internal constructor(val videos: List<Playlist.Video>, val length: Duration) {
+data class Playlist internal constructor(val videos: List<Playlist.Video>, val length: Duration, val encoding: EncodingDescription) {
     companion object {
         fun loadHlsPlaylist(stream: HlsPlaylist.Variant): Playlist =
                 TwitchHlsPlaylist.load(stream)

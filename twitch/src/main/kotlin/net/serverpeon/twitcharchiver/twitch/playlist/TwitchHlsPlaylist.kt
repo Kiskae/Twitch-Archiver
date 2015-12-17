@@ -9,6 +9,11 @@ import java.time.Duration
 
 internal object TwitchHlsPlaylist {
     private const val END_OFFSET_PARAM = "end_offset"
+    private val HLS_ENCODING_PROPS = EncodingDescription(
+            ImmutableList.of("-bsf:a", "aac_adtstoasc"),
+            EncodingDescription.IOType.INPUT_CONCAT
+    )
+
     private val EXT_X_TWITCH_TOTAL_SECS: HlsTag<Duration> = HlsTag("EXT-X-TWITCH-TOTAL-SECS", appliesTo = HlsTag.AppliesTo.ENTIRE_PLAYLIST) {
         it.toDuration()
     }
@@ -26,7 +31,8 @@ internal object TwitchHlsPlaylist {
         val videos = reduceVideos(actualPlaylist)
         return Playlist(
                 ImmutableList.copyOf(videos),
-                actualPlaylist[EXT_X_TWITCH_TOTAL_SECS] ?: fallbackCalculateDuration(videos)
+                actualPlaylist[EXT_X_TWITCH_TOTAL_SECS] ?: fallbackCalculateDuration(videos),
+                HLS_ENCODING_PROPS
         )
     }
 
@@ -35,7 +41,7 @@ internal object TwitchHlsPlaylist {
             return Duration.ZERO
         } else {
             return videos.map { it.length }.reduce { length1, length2 ->
-                length1.plus(length2)
+                length1 + length2
             }
         }
     }
