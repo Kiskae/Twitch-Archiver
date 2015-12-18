@@ -14,9 +14,10 @@ dependencies {
 task fatJar(type: Jar) {
     manifest {
         attributes 'Main-Class': 'net.serverpeon.twitcharchiver.Bootstrap'
+        attributes 'Version': rootProject.version
     }
 
-    baseName = rootProject.name + '-all'
+    baseName = rootProject.name + '-' + rootProject.version
     from {configurations.compile.collect {it.isDirectory() ? it : zipTree(it)}}
     with jar
 }
