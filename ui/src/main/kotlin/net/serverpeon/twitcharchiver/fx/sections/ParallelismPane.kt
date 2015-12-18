@@ -9,6 +9,7 @@ import javafx.scene.control.Spinner
 import javafx.scene.control.SpinnerValueFactory
 import javafx.scene.control.TitledPane
 import net.serverpeon.twitcharchiver.fx.hbox
+import net.serverpeon.twitcharchiver.fx.makeEditable
 
 class ParallelismPane : TitledPane() {
     private val parallelism = SimpleIntegerProperty()
@@ -25,6 +26,7 @@ class ParallelismPane : TitledPane() {
 
             +Spinner(ParallelismSpinner).apply {
                 parallelism.bind(valueProperty())
+                makeEditable()
             }
 
             init {

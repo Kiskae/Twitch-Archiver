@@ -10,13 +10,13 @@ import java.time.Instant
 
 data class DownloadableVod(val twitchData: KrakenApi.VideoListResponse.Video,
                            val tracker: TrackerInfo) {
-    val shouldDownload: BooleanProperty = SimpleBooleanProperty(tracker.hasPriorData)
+    val shouldDownload: BooleanProperty = SimpleBooleanProperty(false)
 
     val downloadProgress: ObservableValue<Double>
         get() = tracker.downloadProgressProp.asObject()
 
     val downloadedParts: ObservableValue<Int>
-        get() = tracker.downloadedParts
+        get() = tracker.downloadedParts.asObject()
 
     val failedParts: ObservableValue<Int>
         get() = tracker.failedParts

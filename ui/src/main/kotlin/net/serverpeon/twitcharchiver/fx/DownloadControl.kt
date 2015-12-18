@@ -52,19 +52,19 @@ class DownloadControl(val api: ApiWrapper,
         }
         isDownloading.set(true)
 
-        val cancellation = AtomicBoolean(false)
+        val cancelled = AtomicBoolean(false)
         val future = ForkJoinTask.adapt {
             //Invoke all subtasks
             ForkJoinTask.invokeAll(vods.map {
                 // Build a new downloader from the tracker
-                it.tracker.newDownloader(client, cancellation)
+                it.tracker.newDownloader(client, cancelled)
             })
         }.toCompletableFuture(ForkJoinPool(paralellism.value)) //create a future for the download
 
         future.handle { value, throwable ->
             // Stop the download at earliest convenience
             if (throwable is CancellationException) {
-                cancellation.set(true)
+                cancelled.set(true)
             }
 
             apiLock.close()

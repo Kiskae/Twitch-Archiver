@@ -13,6 +13,7 @@ import javafx.geometry.Pos
 import javafx.scene.control.*
 import javafx.scene.layout.Region
 import net.serverpeon.twitcharchiver.fx.hbox
+import net.serverpeon.twitcharchiver.fx.makeEditable
 import net.serverpeon.twitcharchiver.fx.stretch
 import net.serverpeon.twitcharchiver.fx.vbox
 import net.serverpeon.twitcharchiver.network.ApiWrapper
@@ -66,6 +67,7 @@ class ChannelInput(val api: ApiWrapper, username: ReadOnlyStringProperty, val fe
                 +Spinner(NonZeroSpinner(-1, Int.MAX_VALUE)).apply {
                     videoLimit.bind(valueProperty())
                     disableProperty().bind(loadingVideos)
+                    makeEditable()
                 }
 
                 init {
