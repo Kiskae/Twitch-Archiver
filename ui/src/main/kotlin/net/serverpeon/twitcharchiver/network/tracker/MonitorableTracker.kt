@@ -7,7 +7,9 @@ import javafx.beans.property.SimpleDoubleProperty
 import net.serverpeon.twitcharchiver.network.ConcurrentProgressTracker
 import net.serverpeon.twitcharchiver.network.download.DownloadSteward
 import net.serverpeon.twitcharchiver.network.download.ForkJoinDownloader
+import net.serverpeon.twitcharchiver.twitch.playlist.Playlist
 import org.slf4j.LoggerFactory
+import java.io.IOException
 import java.util.concurrent.CancellationException
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
@@ -15,10 +17,10 @@ import java.util.concurrent.atomic.AtomicLong
 class MonitorableTracker(val wasCancelled: AtomicBoolean,
                          val statusLog: ObservableStatusLog,
                          partsToDownload: Int,
-                         totalParts: Int
+                         val playlist: Playlist
 ) : DownloadSteward<Int> {
     private val progressTracker = ConcurrentProgressTracker().apply {
-        reset(totalParts - partsToDownload, totalParts)
+        reset(playlist.videos.size - partsToDownload, playlist.videos.size)
     }
     private val currentProgress = AtomicLong(-1)
     private val isUpdating = AtomicBoolean(false)
@@ -40,7 +42,11 @@ class MonitorableTracker(val wasCancelled: AtomicBoolean,
     }
 
     override fun validatePost(entry: ForkJoinDownloader.DownloadEntry<Int>, response: Response, totalBytesDownloaded: Long) {
-        //FIXME: heuristic validation?
+        //Heuristic, if the video is less than 1bps, its probably corrupted/wrong
+        if (playlist.length.seconds > totalBytesDownloaded) {
+            throw IOException("Invalid file size $totalBytesDownloaded, ${playlist.length}")
+        }
+
         log.debug("Finished download of {}", entry.sink)
     }
 

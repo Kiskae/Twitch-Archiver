@@ -70,7 +70,7 @@ class TrackerInfo(val dataDirectory: ReadOnlyObjectProperty<Path?>, val playlist
             statusLog[it.ident] != StatusLogPersistence.Status.DOWNLOADED || !it.sink.toFile().exists()
         }
 
-        val monitor = MonitorableTracker(cancellation, statusLog, partsToDownload.size, playlist.videos.size)
+        val monitor = MonitorableTracker(cancellation, statusLog, partsToDownload.size, playlist)
         downloadProgress.bind(monitor.readOnlyProgressProp)
 
         return ForkJoinDownloader.create(partsToDownload, monitor)

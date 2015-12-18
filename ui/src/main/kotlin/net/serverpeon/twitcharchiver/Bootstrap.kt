@@ -29,6 +29,7 @@ class Bootstrap : Application() {
 }
 
 fun main(args: Array<String>) {
+    System.setProperty("java.net.preferIPv4Stack", "true")
     Platform.setImplicitExit(true)
     Application.launch(Bootstrap::class.java, *args)
 }
