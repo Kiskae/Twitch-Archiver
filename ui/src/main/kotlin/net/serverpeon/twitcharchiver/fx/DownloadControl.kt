@@ -4,6 +4,7 @@ import com.squareup.okhttp.OkHttpClient
 import javafx.application.Platform
 import javafx.beans.binding.When
 import javafx.beans.property.*
+import javafx.scene.control.Alert
 import net.serverpeon.twitcharchiver.network.ApiWrapper
 import net.serverpeon.twitcharchiver.network.DownloadableVod
 import net.serverpeon.twitcharchiver.network.tracker.TrackerInfo
@@ -67,12 +68,38 @@ class DownloadControl(val api: ApiWrapper,
                 cancelled.set(true)
             }
 
+            if (throwable != null) {
+                log.warn("Exception during download process", throwable)
+            }
+
             apiLock.close()
-            Platform.runLater { isDownloading.set(false) }
+            Platform.runLater {
+                isDownloading.set(false)
+
+                // Only show if not cancelled
+                if (!cancelled.get()) {
+                    downloadFinishedAlert(throwable != null)
+                }
+            }
             downloadInProgress = null
         }
 
         downloadInProgress = future
+    }
+
+    private fun downloadFinishedAlert(wasError: Boolean) {
+        if (wasError) {
+            Alert(Alert.AlertType.WARNING).apply {
+                headerText = "Download failed"
+                contentText = "An error occurred during the download, it probably did not complete fully"
+            }
+        } else {
+            Alert(Alert.AlertType.INFORMATION).apply {
+                headerText = "Download complete"
+                contentText = "The selected videos have been downloaded, if any parts failed to download (FP column)" +
+                        " then just retry by running the download again."
+            }
+        }.show()
     }
 
     fun stopDownload() {

@@ -12,6 +12,7 @@ import javafx.geometry.Insets
 import javafx.geometry.Orientation
 import javafx.geometry.Pos
 import javafx.scene.Scene
+import javafx.scene.control.Alert
 import javafx.scene.control.Button
 import javafx.scene.control.ProgressBar
 import javafx.scene.layout.VBox
@@ -135,10 +136,16 @@ class MergingDialog(val segments: TrackerInfo.VideoSegments) : VBox() {
                     onAction = EventHandler {
                         do {
                             merging.value = true
+                            progress.progress = -1.0 // Default to undetermined
                             val merger = ffmpegProcessor.doOnTerminate {
                                 merging.value = false
                             }.doOnCompleted {
                                 progress.progress = 1.0
+
+                                // Show alert when merging is done
+                                Alert(Alert.AlertType.INFORMATION).apply {
+                                    headerText = "Merging complete"
+                                }.show()
                             }.subscribe({
                                 progress.progress = it
                             }, { th ->
