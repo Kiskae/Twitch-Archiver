@@ -16,6 +16,7 @@ import javafx.scene.layout.BackgroundFill
 import javafx.scene.paint.Color
 import javafx.scene.text.Text
 import net.serverpeon.twitcharchiver.fx.*
+import net.serverpeon.twitcharchiver.fx.merging.MergingDialog
 import net.serverpeon.twitcharchiver.network.DownloadableVod
 import net.serverpeon.twitcharchiver.twitch.api.KrakenApi
 import net.serverpeon.twitcharchiver.twitch.playlist.Playlist
@@ -154,16 +155,12 @@ class VideoTable(val downloadControl: DownloadControl) : TableView<DownloadableV
                     @Suppress("USELESS_CAST")
                     when (previousNode) {
                         is Button -> previousNode as Button
-                        else -> Button("Merge Video").apply {
+                        else -> Button("Merge").apply {
                             padding = padding.let { oldPadding ->
                                 Insets(0.0, 10.0, 0.0, 10.0)
                             }
                             onAction = EventHandler<javafx.event.ActionEvent> {
-                                println("Should download: ${tableView.items[tableRow.index].tracker.partFiles()}")
-                                Alert(Alert.AlertType.INFORMATION).apply {
-                                    contentText = "Merging is not yet done, please understand!"
-                                    show()
-                                }
+                                MergingDialog.create(tableView.items[tableRow.index].tracker.partFiles()!!).show()
                             }
                         }
                     }
