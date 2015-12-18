@@ -12,11 +12,10 @@ import javafx.geometry.Insets
 import javafx.geometry.Orientation
 import javafx.geometry.Pos
 import javafx.scene.Scene
-import javafx.scene.control.Alert
-import javafx.scene.control.Button
-import javafx.scene.control.ProgressBar
+import javafx.scene.control.*
 import javafx.scene.layout.VBox
 import javafx.scene.text.Text
+import javafx.stage.DirectoryChooser
 import javafx.stage.Stage
 import net.serverpeon.twitcharchiver.ReactiveFx
 import net.serverpeon.twitcharchiver.fx.fxDSL
@@ -118,15 +117,46 @@ class MergingDialog(val segments: TrackerInfo.VideoSegments) : VBox() {
                 text = Resources.toString(Resources.getResource("ffmpeg-instructions.txt"), Charsets.UTF_8)
             }
 
+            if (ffmpegPath.isEmpty.value) {
+                +hbox {
+                    init {
+                        padding = Insets(10.0)
+                        alignment = Pos.CENTER
+                    }
+
+                    +Text("ffmpeg not found, please manually select the installation directory: ")
+
+                    +Button("Browse").apply {
+                        disableProperty().bind(ffmpegPath.isNotEmpty)
+
+                        onAction = EventHandler {
+                            val dir: File? = DirectoryChooser().apply {
+                                initialDirectory = File(".")
+                            }.showDialog(scene.window)
+
+                            dir?.let { findFfmpeg(it.toPath()) }?.apply {
+                                ffmpegPath.set(this.toAbsolutePath().toString())
+                                System.setProperty("ffmpeg.path", ffmpegPath.value)
+                            }
+                        }
+                    }
+                }
+            }
+
             +hbox {
-                +Text("ffmpeg not found, please manually select the installation directory:").apply {
-                    visibleProperty().bind(ffmpegPath.isEmpty)
+                +Text("ffmpeg path: ")
+
+                +Label().apply {
+                    textProperty().bind(ffmpegPath)
+                    alignment = Pos.CENTER
+                    textOverrun = OverrunStyle.CENTER_ELLIPSIS
                 }
             }
 
             +hbox {
                 val progress = ProgressBar(0.0).apply {
                     stretch(Orientation.HORIZONTAL)
+                    padding = Insets(0.0, 5.0, 0.0, 0.0)
                 }
                 +progress
 
@@ -196,6 +226,7 @@ class MergingDialog(val segments: TrackerInfo.VideoSegments) : VBox() {
             val pane = MergingDialog(segments)
             val stage = Stage()
             stage.scene = Scene(pane)
+            stage.title = "ffmpeg merge - Twitch Archiver - ${segments.base.fileName}"
             stage.show()
             stage.onCloseRequest = EventHandler {
                 pane.onClose()
