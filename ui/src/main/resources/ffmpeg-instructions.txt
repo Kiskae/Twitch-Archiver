@@ -1,2 +1,3 @@
-Using FFMPEG this tool will be able to create a merged video that can be easily imported into the editor of choice.
-Please be aware that the merging process cannot be stopped once it has begun.
+Using ffmpeg this tool will be able to create a merged video that can be easily imported into the editor of choice.
+If you haven't already, you can download ffmpeg from https://www.ffmpeg.org/
+Closing this window will stop the merging process.

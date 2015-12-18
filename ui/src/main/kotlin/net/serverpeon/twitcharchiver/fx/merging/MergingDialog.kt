@@ -12,9 +12,7 @@ import javafx.geometry.Insets
 import javafx.geometry.Orientation
 import javafx.geometry.Pos
 import javafx.scene.Scene
-import javafx.scene.control.Alert
 import javafx.scene.control.Button
-import javafx.scene.control.ButtonType
 import javafx.scene.control.ProgressBar
 import javafx.scene.layout.VBox
 import javafx.scene.text.Text
@@ -28,6 +26,7 @@ import net.serverpeon.twitcharchiver.twitch.playlist.EncodingDescription
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.schedulers.Schedulers
+import rx.subscriptions.CompositeSubscription
 import rx.subscriptions.Subscriptions
 import java.io.File
 import java.io.InputStreamReader
@@ -43,6 +42,13 @@ class MergingDialog(val segments: TrackerInfo.VideoSegments) : VBox() {
         createProcess().start()
     }.flatMap { process ->
         Observable.create<String> { sub ->
+            sub.add(Subscriptions.create {
+                // Kill process on unsubscribe...
+                log.debug("Unsubscribe - Process(alive={})", process.isAlive)
+                if (process.isAlive)
+                    process.destroyForcibly()
+            })
+
             CharStreams.readLines(InputStreamReader(process.errorStream), object : LineProcessor<Unit> {
                 override fun getResult() {
                     if (process.exitValue() != 0) {
@@ -56,12 +62,6 @@ class MergingDialog(val segments: TrackerInfo.VideoSegments) : VBox() {
                     sub.onNext(line)
                     return true
                 }
-            })
-
-            sub.add(Subscriptions.create {
-                // Kill process on unsubscribe...
-                if (process.isAlive)
-                    process.destroyForcibly()
             })
         }
     }.doOnNext {
@@ -98,7 +98,7 @@ class MergingDialog(val segments: TrackerInfo.VideoSegments) : VBox() {
             }
         }
     }
-    private val activeWindow = Subscriptions.from()
+    private val activeWindow = CompositeSubscription()
 
     init {
         val presetPath: Path? = System.getProperty("ffmpeg.path", "").let {
@@ -121,9 +121,6 @@ class MergingDialog(val segments: TrackerInfo.VideoSegments) : VBox() {
                 +Text("ffmpeg not found, please manually select the installation directory:").apply {
                     visibleProperty().bind(ffmpegPath.isEmpty)
                 }
-
-                //TODO: add process to select ffmpeg
-                +Button("")
             }
 
             +hbox {
@@ -137,14 +134,6 @@ class MergingDialog(val segments: TrackerInfo.VideoSegments) : VBox() {
 
                     onAction = EventHandler {
                         do {
-                            if (segments.base.resolve("out.mp4").toFile().exists()) {
-                                val result = Alert(Alert.AlertType.CONFIRMATION).apply {
-                                    headerText = "There already is an out.mp4 file, only confirm if you want to override that file."
-                                }.showAndWait()
-                                if (result.orElse(null) != ButtonType.OK) {
-                                    break
-                                }
-                            }
                             merging.value = true
                             val merger = ffmpegProcessor.doOnTerminate {
                                 merging.value = false
@@ -155,6 +144,7 @@ class MergingDialog(val segments: TrackerInfo.VideoSegments) : VBox() {
                             }, { th ->
                                 log.error("Exception during merging", th)
                             })
+
                             activeWindow.add(merger)
                         } while (false)
                     }
@@ -171,7 +161,6 @@ class MergingDialog(val segments: TrackerInfo.VideoSegments) : VBox() {
             }
         }
     }
-
 
     private fun findFfmpeg(root: Path): Path? {
         if (!root.toFile().exists()) return null
@@ -196,14 +185,14 @@ class MergingDialog(val segments: TrackerInfo.VideoSegments) : VBox() {
     }
 
     companion object {
-        fun create(segments: TrackerInfo.VideoSegments): Stage {
+        fun show(segments: TrackerInfo.VideoSegments) {
             val pane = MergingDialog(segments)
             val stage = Stage()
             stage.scene = Scene(pane)
+            stage.show()
             stage.onCloseRequest = EventHandler {
                 pane.onClose()
             }
-            return stage
         }
 
         //  Duration: 02:02:52.47, start: 64.010000, bitrate: 3735 kb/s
@@ -226,7 +215,9 @@ class MergingDialog(val segments: TrackerInfo.VideoSegments) : VBox() {
     }
 
     private fun createProcess(): ProcessBuilder {
-        return ProcessBuilder(fullCommand()).apply {
+        val cmd = fullCommand()
+        log.debug("ffmpeg cmd: {}", cmd)
+        return ProcessBuilder(cmd).apply {
             directory(segments.base.toFile()) //Run in parts directory
         }
     }

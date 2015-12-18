@@ -12,6 +12,9 @@
         </File>
     </Appenders>
     <Loggers>
+        <Logger name="[FFMPEG]" level="debug" additivity="false">
+            <AppenderRef ref="DebugFile"/>
+        </Logger>
         <Root level="trace">
             <AppenderRef ref="Console"/>
             <AppenderRef ref="DebugFile"/>

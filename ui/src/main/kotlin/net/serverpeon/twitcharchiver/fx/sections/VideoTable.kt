@@ -160,7 +160,7 @@ class VideoTable(val downloadControl: DownloadControl) : TableView<DownloadableV
                                 Insets(0.0, 10.0, 0.0, 10.0)
                             }
                             onAction = EventHandler<javafx.event.ActionEvent> {
-                                MergingDialog.create(tableView.items[tableRow.index].tracker.partFiles()!!).show()
+                                MergingDialog.show(tableView.items[tableRow.index].tracker.partFiles()!!)
                             }
                         }
                     }
