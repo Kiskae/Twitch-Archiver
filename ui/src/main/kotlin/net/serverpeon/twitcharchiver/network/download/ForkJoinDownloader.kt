@@ -2,10 +2,11 @@ package net.serverpeon.twitcharchiver.network.download
 
 import com.google.common.collect.ImmutableList
 import com.google.common.io.Files
-import com.squareup.okhttp.Call
-import com.squareup.okhttp.Response
+import okhttp3.Call
+import okhttp3.Response
 import java.nio.file.Path
 import java.util.concurrent.ForkJoinTask
+import kotlin.collections.map
 
 object ForkJoinDownloader {
     data class DownloadEntry<T>(val source: Call, val sink: Path, val ident: T) {

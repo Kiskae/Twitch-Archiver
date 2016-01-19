@@ -1,8 +1,8 @@
 package net.serverpeon.twitcharchiver.twitch
 
-import com.squareup.okhttp.HttpUrl
-import com.squareup.okhttp.Interceptor
-import com.squareup.okhttp.Response
+import okhttp3.HttpUrl
+import okhttp3.Interceptor
+import okhttp3.Response
 
 /**
  * Injects the OAuth token into any secure requests to the twitch api.
@@ -12,7 +12,7 @@ import com.squareup.okhttp.Response
 internal class OAuthInterceptor(private val token: OAuthToken) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         return chain.proceed(chain.request().let { req ->
-            if (token.value != null && isSecureTwitchApi(req.httpUrl())) {
+            if (token.value != null && isSecureTwitchApi(req.url())) {
                 req.newBuilder().addHeader("Authorization", "OAuth ${token.value}")
             } else {
                 req.newBuilder()

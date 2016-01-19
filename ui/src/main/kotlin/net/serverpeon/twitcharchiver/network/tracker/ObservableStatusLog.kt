@@ -15,6 +15,7 @@ import rx.Observable
 import java.io.File
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
+import kotlin.collections.set
 
 class ObservableStatusLog(resourceDirectory: ReadOnlyObjectProperty<Path?>) {
     private val IO = transformObservable(resourceDirectory) {

@@ -3,9 +3,13 @@ package net.serverpeon.twitcharchiver.twitch.playlist
 import com.google.common.collect.ImmutableList
 import com.google.common.collect.Lists
 import com.google.common.io.Resources
-import com.squareup.okhttp.HttpUrl
 import net.serverpeon.twitcharchiver.hls.*
+import okhttp3.HttpUrl
 import java.time.Duration
+import kotlin.collections.map
+import kotlin.collections.reduce
+import kotlin.text.endsWith
+import net.serverpeon.twitcharchiver.hls.OfficialTags.toDuration
 
 internal object TwitchHlsPlaylist {
     private const val END_OFFSET_PARAM = "end_offset"

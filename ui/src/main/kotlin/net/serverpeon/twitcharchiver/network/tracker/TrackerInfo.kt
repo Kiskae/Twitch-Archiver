@@ -1,10 +1,6 @@
 package net.serverpeon.twitcharchiver.network.tracker
 
 import com.google.common.io.Files
-import com.squareup.okhttp.Call
-import com.squareup.okhttp.HttpUrl
-import com.squareup.okhttp.OkHttpClient
-import com.squareup.okhttp.Request
 import javafx.beans.property.ReadOnlyDoubleProperty
 import javafx.beans.property.ReadOnlyObjectProperty
 import javafx.beans.property.SimpleDoubleProperty
@@ -13,11 +9,19 @@ import javafx.beans.value.ObservableValue
 import net.serverpeon.twitcharchiver.network.download.ForkJoinDownloader
 import net.serverpeon.twitcharchiver.twitch.playlist.EncodingDescription
 import net.serverpeon.twitcharchiver.twitch.playlist.Playlist
+import okhttp3.Call
+import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
 import java.util.concurrent.ForkJoinTask
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.collections.count
+import kotlin.collections.filter
+import kotlin.collections.mapIndexed
 import kotlin.text.Regex
+import kotlin.text.replace
 
 class TrackerInfo(val dataDirectory: ReadOnlyObjectProperty<Path?>, val playlist: Playlist) {
     private val statusLog = ObservableStatusLog(dataDirectory)

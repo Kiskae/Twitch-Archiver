@@ -1,6 +1,8 @@
 package net.serverpeon.twitcharchiver.hls
 
 import com.google.common.collect.ImmutableMap
+import kotlin.collections.arrayListOf
+import kotlin.collections.forEach
 
 /**
  *

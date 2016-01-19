@@ -1,9 +1,9 @@
 package net.serverpeon.twitcharchiver.twitch.api
 
 import com.google.gson.annotations.SerializedName
-import retrofit.Call
-import retrofit.http.GET
-import retrofit.http.Path
+import retrofit2.Call
+import retrofit2.http.GET
+import retrofit2.http.Path
 
 /**
  * Codifies the required requests to INTERNAL Twitch API resources.

@@ -9,6 +9,7 @@ import javafx.geometry.Orientation
 import javafx.scene.Node
 import javafx.scene.control.Spinner
 import javafx.scene.layout.*
+import kotlin.collections.forEach
 import kotlin.properties.Delegates
 
 fun Region.stretch(orientation: Orientation) {

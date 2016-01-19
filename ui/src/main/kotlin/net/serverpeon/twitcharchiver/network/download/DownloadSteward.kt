@@ -1,6 +1,6 @@
 package net.serverpeon.twitcharchiver.network.download
 
-import com.squareup.okhttp.Response
+import okhttp3.Response
 
 interface DownloadSteward<T> {
     fun validatePre(entry: ForkJoinDownloader.DownloadEntry<T>, response: Response)

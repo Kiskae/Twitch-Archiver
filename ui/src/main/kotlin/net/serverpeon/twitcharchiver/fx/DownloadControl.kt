@@ -1,6 +1,5 @@
 package net.serverpeon.twitcharchiver.fx
 
-import com.squareup.okhttp.OkHttpClient
 import javafx.application.Platform
 import javafx.beans.binding.When
 import javafx.beans.property.*
@@ -10,10 +9,13 @@ import net.serverpeon.twitcharchiver.network.DownloadableVod
 import net.serverpeon.twitcharchiver.network.tracker.TrackerInfo
 import net.serverpeon.twitcharchiver.twitch.api.KrakenApi
 import net.serverpeon.twitcharchiver.twitch.playlist.Playlist
+import okhttp3.OkHttpClient
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
 import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.collections.map
+import kotlin.collections.toArrayList
 
 class DownloadControl(val api: ApiWrapper,
                       val parentDirectory: ReadOnlyObjectProperty<Path?>,
@@ -41,9 +43,9 @@ class DownloadControl(val api: ApiWrapper,
 
     fun beginDownload() {
         val vods = getVods().toArrayList()
-        val client = OkHttpClient().apply {
-            setReadTimeout(1, TimeUnit.MINUTES)
-        }
+        val client = OkHttpClient.Builder()
+                .readTimeout(1, TimeUnit.MINUTES)
+                .build()
 
         check(null == downloadInProgress) {
             "Starting download while download is in progress?"

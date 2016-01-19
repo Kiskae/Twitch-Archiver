@@ -1,9 +1,10 @@
 package net.serverpeon.twitcharchiver.twitch.playlist
 
-import com.squareup.okhttp.HttpUrl
 import net.serverpeon.twitcharchiver.hls.HlsPlaylist
 import net.serverpeon.twitcharchiver.twitch.api.InternalApi
+import okhttp3.HttpUrl
 import java.time.Duration
+import kotlin.collections.count
 
 /**
  * Playlist of videos for a broadcast on Twitch

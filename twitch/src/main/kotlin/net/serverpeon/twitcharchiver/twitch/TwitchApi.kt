@@ -4,9 +4,6 @@ import com.google.common.collect.ImmutableList
 import com.google.common.io.Resources
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
-import com.squareup.okhttp.HttpUrl
-import com.squareup.okhttp.Interceptor
-import com.squareup.okhttp.OkHttpClient
 import net.serverpeon.twitcharchiver.hls.HlsParser
 import net.serverpeon.twitcharchiver.hls.TagRepository
 import net.serverpeon.twitcharchiver.twitch.api.InternalApi
@@ -18,15 +15,26 @@ import net.serverpeon.twitcharchiver.twitch.errors.UnrecognizedVodFormatExceptio
 import net.serverpeon.twitcharchiver.twitch.json.DateTimeConverter
 import net.serverpeon.twitcharchiver.twitch.json.DurationConverter
 import net.serverpeon.twitcharchiver.twitch.playlist.Playlist
+import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
 import org.slf4j.LoggerFactory
-import retrofit.GsonConverterFactory
-import retrofit.Retrofit
+import retrofit2.GsonConverterFactory
+import retrofit2.Retrofit
 import rx.Observable
 import rx.Single
 import java.io.IOException
 import java.time.Duration
 import java.time.ZonedDateTime
 import java.util.*
+import kotlin.collections.first
+import kotlin.collections.isNotEmpty
+import kotlin.collections.map
+import kotlin.collections.sortedByDescending
+import kotlin.ranges.step
+import kotlin.text.contains
+import kotlin.text.startsWith
+import kotlin.text.substring
+import kotlin.text.toLong
 
 /**
  * Unified access to all the API calls required to download broadcasts from twitch.
@@ -45,13 +53,12 @@ class TwitchApi(token: OAuthToken) {
         it.create()
     }
 
-    private val client: OkHttpClient = OkHttpClient().apply {
-        interceptors().add(OAuthInterceptor(token))
-        interceptors().add(Interceptor { chain ->
-            log.info("Begin Request")
-            chain.proceed(chain.request())
-        })
-    }
+    private val client: OkHttpClient = OkHttpClient.Builder()
+            .addInterceptor(OAuthInterceptor(token))
+            .addInterceptor { chain ->
+                log.info("Begin Request")
+                chain.proceed(chain.request())
+            }.build()
 
     private val retrofit: Retrofit = Retrofit.Builder()
             .addConverterFactory(GsonConverterFactory.create(gson))
@@ -116,7 +123,7 @@ class TwitchApi(token: OAuthToken) {
                         val totalVideos = if (limit < 0) response.totalVideos else Math.min(limit, response.totalVideos)
 
                         val nextCalls: MutableList<Observable<KrakenApi.VideoListResponse.Video>> = LinkedList()
-                        for (nextOffset in IntRange(BROADCASTS_PER_REQUEST, totalVideos).step(BROADCASTS_PER_REQUEST)) {
+                        for (nextOffset in IntRange(BROADCASTS_PER_REQUEST, totalVideos) step BROADCASTS_PER_REQUEST) {
                             nextCalls.add(krakenApi.videoList(
                                     channelName,
                                     limit = Math.min(BROADCASTS_PER_REQUEST, totalVideos - nextOffset),

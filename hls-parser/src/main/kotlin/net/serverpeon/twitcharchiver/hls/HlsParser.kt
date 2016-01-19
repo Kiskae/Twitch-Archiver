@@ -9,6 +9,12 @@ import com.google.common.io.CharSource
 import com.google.common.io.LineProcessor
 import java.net.URI
 import java.util.*
+import kotlin.collections.plus
+import kotlin.collections.set
+import kotlin.text.isNullOrBlank
+import kotlin.text.split
+import kotlin.text.startsWith
+import kotlin.text.substring
 
 object HlsParser {
 
@@ -69,7 +75,7 @@ object HlsParser {
         }
 
         private fun putData(tag: HlsTag<*>, value: Any?) {
-            return when (tag.appliesTo) {
+            when (tag.appliesTo) {
                 HlsTag.AppliesTo.ENTIRE_PLAYLIST -> {
                     if (value != null ) this.playlistMap[tag] = value else this.playlistMap.remove(tag)
                 }

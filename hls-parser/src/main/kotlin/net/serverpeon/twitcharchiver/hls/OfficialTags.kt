@@ -5,6 +5,10 @@ import java.math.BigInteger
 import java.net.URI
 import java.time.Duration
 import java.time.ZonedDateTime
+import java.util.concurrent.TimeUnit
+import kotlin.text.split
+import kotlin.text.toInt
+import kotlin.text.toLong
 
 /**
  * [http://tools.ietf.org/html/draft-pantos-http-live-streaming-08]
@@ -657,6 +661,11 @@ object OfficialTags {
             "NO" -> false
             else -> throw IllegalArgumentException("Invalid value for YES/NO: $input")
         }
+    }
+
+    fun CharSequence.toDuration(): Duration {
+        val parts = this.split('.', limit = 2)
+        return Duration.ofSeconds(parts[0].toLong(), if (parts.size == 2) TimeUnit.MILLISECONDS.toNanos(parts[1].toLong()) else 0)
     }
 }
 

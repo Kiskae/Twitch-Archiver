@@ -1,10 +1,10 @@
 package net.serverpeon.twitcharchiver.twitch.api
 
 import com.google.gson.annotations.SerializedName
-import retrofit.Call
-import retrofit.http.GET
-import retrofit.http.Path
-import retrofit.http.Query
+import retrofit2.Call
+import retrofit2.http.GET
+import retrofit2.http.Path
+import retrofit2.http.Query
 import java.time.Duration
 import java.time.ZonedDateTime
 

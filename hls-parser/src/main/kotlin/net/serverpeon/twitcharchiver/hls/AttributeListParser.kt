@@ -3,6 +3,7 @@ package net.serverpeon.twitcharchiver.hls
 import com.google.common.base.Preconditions.checkState
 import java.math.BigDecimal
 import java.math.BigInteger
+import kotlin.text.*
 
 /**
  *

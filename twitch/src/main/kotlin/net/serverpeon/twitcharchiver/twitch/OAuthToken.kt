@@ -1,6 +1,8 @@
 package net.serverpeon.twitcharchiver.twitch
 
 import org.slf4j.LoggerFactory
+import kotlin.text.equals
+import kotlin.text.replaceRange
 
 /**
  * Wrapper object which protects the OAuth token during runtime.

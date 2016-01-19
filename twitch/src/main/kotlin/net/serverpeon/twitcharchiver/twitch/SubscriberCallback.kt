@@ -1,24 +1,23 @@
 package net.serverpeon.twitcharchiver.twitch
 
-import retrofit.Call
-import retrofit.Callback
-import retrofit.Response
-import retrofit.Retrofit
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import rx.Single
 import rx.SingleSubscriber
 import rx.subscriptions.Subscriptions
 
 class SubscriberCallback<T>(val sub: SingleSubscriber<in T>) : Callback<T> {
-    override fun onFailure(t: Throwable?) {
-        sub.onError(t)
-    }
-
-    override fun onResponse(response: Response<T>, retrofit: Retrofit?) {
+    override fun onResponse(response: Response<T>) {
         if (response.isSuccess) {
             sub.onSuccess(response.body())
         } else {
             sub.onError(ResponseException(response))
         }
+    }
+
+    override fun onFailure(t: Throwable?) {
+        sub.onError(t)
     }
 
     class ResponseException(val resp: Response<*>) : RuntimeException(resp.message()) {

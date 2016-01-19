@@ -1,6 +1,5 @@
 package net.serverpeon.twitcharchiver.network.tracker
 
-import com.squareup.okhttp.Response
 import javafx.application.Platform
 import javafx.beans.property.ReadOnlyDoubleProperty
 import javafx.beans.property.SimpleDoubleProperty
@@ -8,6 +7,7 @@ import net.serverpeon.twitcharchiver.network.ConcurrentProgressTracker
 import net.serverpeon.twitcharchiver.network.download.DownloadSteward
 import net.serverpeon.twitcharchiver.network.download.ForkJoinDownloader
 import net.serverpeon.twitcharchiver.twitch.playlist.Playlist
+import okhttp3.Response
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.util.concurrent.CancellationException
@@ -38,7 +38,7 @@ class MonitorableTracker(val wasCancelled: AtomicBoolean,
             "Request returned non-video content (${response.body().contentType()})"
         }
         progressTracker.modifyExpectedTotal(response.body().contentLength(), entry.ident)
-        log.debug("Starting download of {} to {}", response.request().urlString(), entry.sink)
+        log.debug("Starting download of {} to {}", response.request().url().toString(), entry.sink)
     }
 
     override fun validatePost(entry: ForkJoinDownloader.DownloadEntry<Int>, response: Response, totalBytesDownloaded: Long) {

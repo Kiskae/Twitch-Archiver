@@ -1,6 +1,6 @@
 package net.serverpeon.twitcharchiver.twitch.api
 
-import com.squareup.okhttp.HttpUrl
+import okhttp3.HttpUrl
 import java.net.URLEncoder
 
 /**

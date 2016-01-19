@@ -30,6 +30,7 @@ import java.time.format.DateTimeFormatterBuilder
 import java.time.format.TextStyle
 import java.time.temporal.ChronoField
 import java.util.*
+import kotlin.collections.filter
 
 class VideoTable(val downloadControl: DownloadControl) : TableView<DownloadableVod>(), ChannelInput.VideoFeed {
     private val videos: ObservableList<DownloadableVod> = FXCollections.observableArrayList()

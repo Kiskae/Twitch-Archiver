@@ -12,6 +12,8 @@ import net.serverpeon.twitcharchiver.fx.hbox
 import net.serverpeon.twitcharchiver.fx.stretch
 import net.serverpeon.twitcharchiver.network.ApiWrapper
 import net.serverpeon.twitcharchiver.twitch.OAuthToken
+import kotlin.text.startsWith
+import kotlin.text.substring
 
 class OAuthInput(val api: ApiWrapper, val token: OAuthToken) : TitledPane() {
     private val processingValue = SimpleBooleanProperty(false)

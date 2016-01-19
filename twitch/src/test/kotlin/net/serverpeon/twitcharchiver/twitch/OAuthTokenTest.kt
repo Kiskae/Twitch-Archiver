@@ -2,6 +2,7 @@ package net.serverpeon.twitcharchiver.twitch
 
 import org.junit.Test
 import kotlin.test.assertFalse
+import kotlin.text.contains
 
 class OAuthTokenTest {
 
