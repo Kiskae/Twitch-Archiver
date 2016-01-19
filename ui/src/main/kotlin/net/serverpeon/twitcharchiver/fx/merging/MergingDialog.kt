@@ -2,8 +2,6 @@ package net.serverpeon.twitcharchiver.fx.merging
 
 import com.google.common.base.Joiner
 import com.google.common.collect.ImmutableList
-import com.google.common.io.CharStreams
-import com.google.common.io.LineProcessor
 import com.google.common.io.Resources
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.property.SimpleStringProperty
@@ -25,70 +23,47 @@ import net.serverpeon.twitcharchiver.network.tracker.TrackerInfo
 import net.serverpeon.twitcharchiver.twitch.playlist.EncodingDescription
 import org.slf4j.LoggerFactory
 import rx.Observable
-import rx.schedulers.Schedulers
 import rx.subscriptions.CompositeSubscription
-import rx.subscriptions.Subscriptions
 import java.io.File
-import java.io.InputStreamReader
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
 import java.util.function.BiPredicate
-import kotlin.text.Regex
+import kotlin.collections.map
+import kotlin.text.*
 
 class MergingDialog(val segments: TrackerInfo.VideoSegments) : VBox() {
-    val ffmpegProcessor = Observable.fromCallable {
-        createProcess().start()
-    }.flatMap { process ->
-        Observable.create<String> { sub ->
-            sub.add(Subscriptions.create {
-                // Kill process on unsubscribe...
-                log.debug("Unsubscribe - Process(alive={})", process.isAlive)
-                if (process.isAlive)
-                    process.destroyForcibly()
-            })
+    val ffmpegProcessor: Observable<Double> = Observable.fromCallable {
+        ObservableProcess.create(createProcess())
+    }.flatMap {
+        it.observe {
+            if (FFMPEG_LOG.isTraceEnabled) {
+                errorStream.subscribe { FFMPEG_LOG.trace(it) }
+            }
 
-            CharStreams.readLines(InputStreamReader(process.errorStream), object : LineProcessor<Unit> {
-                override fun getResult() {
-                    if (process.exitValue() != 0) {
-                        sub.onError(RuntimeException("Non-zero exit: ${process.exitValue()}"))
-                    } else {
-                        sub.onCompleted()
-                    }
-                }
+            val firstDuration: Observable<Long> = errorStream.takeFirst {
+                // Find the line that represents total duration
+                it.trimStart().startsWith("Duration:")
+            }.map {
+                TOTAL_DURATION_REGEX.matchEntire(it)!!.groups[1]!!.value.toFfmpegDuration()
+            }
 
-                override fun processLine(line: String): Boolean {
-                    sub.onNext(line)
-                    return true
+            val progressReports: Observable<Long> = errorStream.filter {
+                // Only process progress frames
+                it.startsWith("frame=")
+            }.map {
+                PROGRESS_DURATION_REGEX.matchEntire(it)!!.groups[1]!!.value.toFfmpegDuration()
+            }
+
+            firstDuration.flatMap { totalDuration ->
+                progressReports.map { progress ->
+                    progress.toDouble() / totalDuration
                 }
-            })
+            }
         }
-    }.doOnNext {
-        FFMPEG_LOG.trace(it)
-    }.skipWhile {
-        //Skip until we find the first duration:
-        //  Duration: 02:02:52.47, start: 64.010000, bitrate: 3735 kb/s
-        !it.trimStart().startsWith("Duration:")
-    }.lift(ExtractFirstOperator<Long, String> { firstDurationLine ->
-        try {
-            TOTAL_DURATION_REGEX.matchEntire(firstDurationLine)!!.groups[1]!!.value.toFfmpegDuration()
-        } catch (ex: Exception) {
-            -1 //
-        }
-    }).skipWhile {
-        //Skip if we weren't able to parse the duration
-        it.first == -1L
-    }.filter {
-        //Only process progress frames
-        it.second.startsWith("frame=")
-    }.map {
-        val progressDuration = PROGRESS_DURATION_REGEX.matchEntire(it.second)!!.groups[1]!!.value.toFfmpegDuration()
-        progressDuration.toDouble() / it.first
-    }.subscribeOn(
-            Schedulers.newThread() // Since process reading is blocking, run on a new thread
-    ).observeOn(
-            ReactiveFx.scheduler // But receive the updates on the application thread.
+    }.observeOn(
+            ReactiveFx.scheduler // Receive updates on the fx thread
     )
 
     private val ffmpegPath = SimpleStringProperty("").apply {
