@@ -18,23 +18,14 @@ import net.serverpeon.twitcharchiver.twitch.playlist.Playlist
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import org.slf4j.LoggerFactory
-import retrofit2.GsonConverterFactory
 import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 import rx.Observable
 import rx.Single
 import java.io.IOException
 import java.time.Duration
 import java.time.ZonedDateTime
 import java.util.*
-import kotlin.collections.first
-import kotlin.collections.isNotEmpty
-import kotlin.collections.map
-import kotlin.collections.sortedByDescending
-import kotlin.ranges.step
-import kotlin.text.contains
-import kotlin.text.startsWith
-import kotlin.text.substring
-import kotlin.text.toLong
 
 /**
  * Unified access to all the API calls required to download broadcasts from twitch.

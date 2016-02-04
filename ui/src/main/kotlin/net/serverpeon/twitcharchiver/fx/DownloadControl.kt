@@ -14,8 +14,6 @@ import org.slf4j.LoggerFactory
 import java.nio.file.Path
 import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.collections.map
-import kotlin.collections.toArrayList
 
 class DownloadControl(val api: ApiWrapper,
                       val parentDirectory: ReadOnlyObjectProperty<Path?>,
@@ -42,7 +40,7 @@ class DownloadControl(val api: ApiWrapper,
     }
 
     fun beginDownload() {
-        val vods = getVods().toArrayList()
+        val vods = getVods().toMutableList()
         val client = OkHttpClient.Builder()
                 .readTimeout(1, TimeUnit.MINUTES)
                 .build()

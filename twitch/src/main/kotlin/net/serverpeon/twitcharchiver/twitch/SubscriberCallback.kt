@@ -8,7 +8,7 @@ import rx.SingleSubscriber
 import rx.subscriptions.Subscriptions
 
 class SubscriberCallback<T>(val sub: SingleSubscriber<in T>) : Callback<T> {
-    override fun onResponse(response: Response<T>) {
+    override fun onResponse(call: Call<T>, response: Response<T>) {
         if (response.isSuccess) {
             sub.onSuccess(response.body())
         } else {
@@ -16,7 +16,7 @@ class SubscriberCallback<T>(val sub: SingleSubscriber<in T>) : Callback<T> {
         }
     }
 
-    override fun onFailure(t: Throwable?) {
+    override fun onFailure(call: Call<T>, t: Throwable?) {
         sub.onError(t)
     }
 

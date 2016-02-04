@@ -6,7 +6,6 @@ import okhttp3.Call
 import okhttp3.Response
 import java.nio.file.Path
 import java.util.concurrent.ForkJoinTask
-import kotlin.collections.map
 
 object ForkJoinDownloader {
     data class DownloadEntry<T>(val source: Call, val sink: Path, val ident: T) {
@@ -72,7 +71,7 @@ object ForkJoinDownloader {
         override fun run() {
             updater.onBegin(entry)
             try {
-                entry.doDownload(defaultBufferSize, { response ->
+                entry.doDownload(DEFAULT_BUFFER_SIZE, { response ->
                     check(response.isSuccessful) {
                         "Non-success response code"
                     }
