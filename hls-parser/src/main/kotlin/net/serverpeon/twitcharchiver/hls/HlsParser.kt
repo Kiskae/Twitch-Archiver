@@ -62,7 +62,6 @@ object HlsParser {
                 checkState(!getData(tag.appliesTo).containsKey(tag), "Duplicate key where unique is expected: ${tag.tag}")
             }
 
-            @Suppress("IMPLICIT_CAST_TO_UNIT_OR_ANY")
             val value: Any? = if (tag.hasAttributes) {
                 checkState(parts.size == 2, "Tag expects attributes but none found: %s", parts[0])
                 tag.processor(parts[1])

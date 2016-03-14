@@ -7,7 +7,7 @@ import okhttp3.Response
 /**
  * Injects the OAuth token into any secure requests to the twitch api.
  *
- * It will not inject the token into unsecure HTTP requests for safety.
+ * It will not inject the token into insecure HTTP requests for safety.
  */
 internal class OAuthInterceptor(private val token: OAuthToken) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
