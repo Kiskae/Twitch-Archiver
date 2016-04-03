@@ -12,7 +12,6 @@ import java.util.concurrent.atomic.AtomicReference
 class ApiWrapper(private val api: TwitchApi) {
     private val ownerProp: SimpleObjectProperty<Any?> = SimpleObjectProperty(null)
     private val ownerLock: AtomicReference<Any?> = AtomicReference(null)
-    private val accessLock: AtomicBoolean = AtomicBoolean(false)
     private val log = LoggerFactory.getLogger(ApiWrapper::class.java)
 
     fun hasAccess(lockObj: Any): BooleanBinding {

@@ -73,7 +73,7 @@ object ForkJoinDownloader {
             try {
                 entry.doDownload(DEFAULT_BUFFER_SIZE, { response ->
                     check(response.isSuccessful) {
-                        "Non-success response code"
+                        "Non-success response code ${response.message()}"
                     }
                     updater.validatePre(entry, response)
                 }, {
