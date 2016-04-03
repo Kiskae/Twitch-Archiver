@@ -34,7 +34,9 @@ class ObservableProcess(private val processSource: Observable<Process>) {
                 //   onCompleted is called we need to block until it is finished.
                 process.waitFor()
 
-                sub.onCompleted()
+                if (!sub.isUnsubscribed) {
+                    sub.onCompleted()
+                }
             }.subscribeOn(Schedulers.newThread())) // Avoid blocking something important by spinning up a new thread.
         }
     }
