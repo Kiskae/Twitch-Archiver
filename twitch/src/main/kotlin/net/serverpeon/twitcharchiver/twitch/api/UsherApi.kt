@@ -7,7 +7,7 @@ import java.net.URLEncoder
  * Usher is Twitch's content delivery system, it manages access to the streams
  */
 object UsherApi {
-    private val USHER_URL = HttpUrl.parse("http://usher.twitch.tv/vod/")
+    private val USHER_URL = HttpUrl.parse("https://usher.twitch.tv/vod/")
     private const val ALLOW_SOURCE_PARAM = "allow_source"
     private const val ALLOW_SPECTRE_PARAM = "allow_spectre"
     private const val PLAYER_PARAM = "player"

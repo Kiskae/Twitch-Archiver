@@ -17,11 +17,17 @@ class SubscriberCallback<T>(val sub: SingleSubscriber<in T>) : Callback<T> {
     }
 
     override fun onFailure(call: Call<T>, t: Throwable?) {
-        sub.onError(t)
+        if (call.isCanceled) {
+            sub.onError(CancelledException())
+        } else {
+            sub.onError(t)
+        }
     }
 
     class ResponseException(val resp: Response<*>) : RuntimeException(resp.message()) {
     }
+
+    class CancelledException() : RuntimeException("Retrofit Call was cancelled")
 }
 
 fun <T> Call<T>.toRx(): Single<T> {

@@ -12,8 +12,8 @@ import net.serverpeon.twitcharchiver.twitch.api.UsherApi
 import net.serverpeon.twitcharchiver.twitch.errors.RestrictedAccessException
 import net.serverpeon.twitcharchiver.twitch.errors.TwitchApiException
 import net.serverpeon.twitcharchiver.twitch.errors.UnrecognizedVodFormatException
-import net.serverpeon.twitcharchiver.twitch.json.DateTimeConverter
-import net.serverpeon.twitcharchiver.twitch.json.DurationConverter
+import net.serverpeon.twitcharchiver.twitch.json.DurationAdapter
+import net.serverpeon.twitcharchiver.twitch.json.ZonedDateTimeAdapter
 import net.serverpeon.twitcharchiver.twitch.playlist.Playlist
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
@@ -38,11 +38,10 @@ class TwitchApi(token: OAuthToken) {
         private val log = LoggerFactory.getLogger(TwitchApi::class.java)
     }
 
-    private val gson: Gson = GsonBuilder().let {
-        it.registerTypeAdapter(Duration::class.java, DurationConverter)
-        it.registerTypeAdapter(ZonedDateTime::class.java, DateTimeConverter)
-        it.create()
-    }
+    private val gson: Gson = GsonBuilder().apply {
+        registerTypeAdapter(Duration::class.java, DurationAdapter)
+        registerTypeAdapter(ZonedDateTime::class.java, ZonedDateTimeAdapter)
+    }.create()
 
     private val client: OkHttpClient = OkHttpClient.Builder()
             .addInterceptor(OAuthInterceptor(token))
@@ -61,8 +60,7 @@ class TwitchApi(token: OAuthToken) {
     private val internalApi: InternalApi by lazy { retrofit.create(InternalApi::class.java) }
 
     private fun Throwable.isNotRetrofitCancelled(): Boolean {
-        // If Call.cancel() is called, an IOException with the message "Canceled" is thrown
-        return !"Canceled".equals(message)
+        return this !is SubscriberCallback.CancelledException
     }
 
     /**
