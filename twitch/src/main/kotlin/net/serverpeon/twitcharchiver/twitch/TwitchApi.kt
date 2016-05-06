@@ -41,7 +41,7 @@ class TwitchApi(token: OAuthToken) {
             return props.getProperty("clientId")
         }
 
-        private val TWITCH_CLIENT_ID: String by lazy { loadClientId() }
+        val TWITCH_CLIENT_ID: String by lazy { loadClientId() }
         private val TWITCH_API_URL = HttpUrl.parse("https://api.twitch.tv/")
         private const val BROADCASTS_PER_REQUEST: Int = 100
         private const val TOP_QUALITY_STREAM: String = "chunked"
