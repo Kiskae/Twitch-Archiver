@@ -1,3 +1,5 @@
+import org.apache.tools.ant.filters.ReplaceTokens
+
 apply plugin: 'kotlin'
 
 dependencies {
@@ -9,4 +11,10 @@ dependencies {
     testCompile 'junit:junit:4.12'
     testCompile "org.jetbrains.kotlin:kotlin-test:$kotlin_version"
     compile 'org.slf4j:slf4j-api:1.7.13'
+}
+
+processResources {
+    filter(ReplaceTokens, tokens: [
+            "twitch-client-id": rootProject.property("twitch-client-id")
+    ])
 }

@@ -32,6 +32,15 @@ import java.util.*
  */
 class TwitchApi(token: OAuthToken) {
     companion object {
+        private fun loadClientId(): String {
+            val props = Properties()
+            TwitchApi::class.java.getResourceAsStream("/api.properties").use {
+                props.load(it)
+            }
+            return props.getProperty("clientId")
+        }
+
+        private val TWITCH_CLIENT_ID: String by lazy { loadClientId() }
         private val TWITCH_API_URL = HttpUrl.parse("https://api.twitch.tv/")
         private const val BROADCASTS_PER_REQUEST: Int = 100
         private const val TOP_QUALITY_STREAM: String = "chunked"
@@ -44,7 +53,7 @@ class TwitchApi(token: OAuthToken) {
     }.create()
 
     private val client: OkHttpClient = OkHttpClient.Builder()
-            .addInterceptor(OAuthInterceptor(token))
+            .addInterceptor(OAuthInterceptor(token, TWITCH_CLIENT_ID))
             .addInterceptor { chain ->
                 log.info("Begin Request")
                 chain.proceed(chain.request())

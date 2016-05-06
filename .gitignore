@@ -29,3 +29,6 @@ gradle-app.setting
 lastrun.log
 .idea/
 *.iml
+
+# Secrets
+gradle.properties

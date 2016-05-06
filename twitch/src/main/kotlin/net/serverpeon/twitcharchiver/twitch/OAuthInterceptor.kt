@@ -11,7 +11,7 @@ import okhttp3.Response
  *
  * It will not inject the token into insecure HTTP requests for safety.
  */
-internal class OAuthInterceptor(private val token: OAuthToken) : Interceptor {
+internal class OAuthInterceptor(private val token: OAuthToken, private val clientId: String) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         return chain.proceed(chain.request().let { req ->
             if (token.value != null && isSecureTwitchApi(req.url())) {
@@ -20,7 +20,7 @@ internal class OAuthInterceptor(private val token: OAuthToken) : Interceptor {
                 req.newBuilder()
             }.apply {
                 addHeader(HttpHeaders.ACCEPT, TWITCH_API_V3_JSON_MEDIATYPE.toString())
-                addHeader(TWITCH_CLIENT_ID_HEADER, "<TODO>") //TODO
+                addHeader(TWITCH_CLIENT_ID_HEADER, clientId)
             }.build()
         })
     }
