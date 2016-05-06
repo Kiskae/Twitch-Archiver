@@ -17,6 +17,7 @@ import net.serverpeon.twitcharchiver.twitch.json.ZonedDateTimeAdapter
 import net.serverpeon.twitcharchiver.twitch.playlist.Playlist
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import org.slf4j.LoggerFactory
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -57,7 +58,13 @@ class TwitchApi(token: OAuthToken) {
             .addInterceptor { chain ->
                 log.info("Begin Request")
                 chain.proceed(chain.request())
-            }.build()
+            }.apply {
+        System.getProperty("http.debug")?.let { level ->
+            addInterceptor(HttpLoggingInterceptor()
+                    .setLevel(HttpLoggingInterceptor.Level.valueOf(level.toUpperCase()))
+            )
+        }
+    }.build()
 
     private val retrofit: Retrofit = Retrofit.Builder()
             .addConverterFactory(GsonConverterFactory.create(gson))
