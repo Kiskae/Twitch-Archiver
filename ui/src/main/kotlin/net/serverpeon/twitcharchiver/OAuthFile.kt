@@ -26,6 +26,10 @@ data class OAuthFile private constructor(private val oauth: String?, private val
         return invalid == null
     }
 
+    fun invalidationReason(): Exception {
+        return invalid!!
+    }
+
     companion object {
         private val version: Int = 1
 
