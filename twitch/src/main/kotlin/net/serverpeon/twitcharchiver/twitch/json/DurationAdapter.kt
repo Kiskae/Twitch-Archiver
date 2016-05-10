@@ -12,7 +12,11 @@ object DurationAdapter : TypeAdapter<Duration>() {
             reader.nextNull()
             return null
         } else {
-            return Duration.ofSeconds(reader.nextLong())
+            val parts = reader.nextString().split('.', limit = 2).map { it.toLong() }
+            return when (parts.size) {
+                2 -> Duration.ofSeconds(parts[0], parts[1])
+                else -> Duration.ofSeconds(parts[0])
+            }
         }
     }
 

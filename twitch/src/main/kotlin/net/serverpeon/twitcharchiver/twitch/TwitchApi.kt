@@ -23,10 +23,12 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import rx.Observable
 import rx.Single
+import rx.observables.AsyncOnSubscribe
 import java.io.IOException
 import java.time.Duration
 import java.time.ZonedDateTime
 import java.util.*
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Unified access to all the API calls required to download broadcasts from twitch.
@@ -109,7 +111,6 @@ class TwitchApi(token: OAuthToken) {
     @Throws(IOException::class)
     fun videoList(channelName: String, limit: Int = -1): Observable<KrakenApi.VideoListResponse.Video> {
         require(limit != 0) { "Limit must be higher than 0" }
-        log.trace("videoList({}, {})", channelName, limit)
 
         if (limit > 0 && limit <= BROADCASTS_PER_REQUEST) {
             return krakenApi.videoList(channelName, limit = limit)
@@ -117,32 +118,46 @@ class TwitchApi(token: OAuthToken) {
                     .toObservable()
                     .flatMapIterable { it.videos }
         } else {
-            return krakenApi.videoList(channelName)
-                    .toRx()
-                    .doOnError {
-                        if (it.isNotRetrofitCancelled())
-                            log.error("videoList({}, {}) failed", channelName, limit, it)
-                    }
-                    .toObservable()
-                    .flatMap { response ->
-                        val totalVideos = if (limit < 0) response.totalVideos else Math.min(limit, response.totalVideos)
+            data class VideoListState(val offset: Long, val finished: AtomicBoolean)
 
-                        val nextCalls: MutableList<Observable<KrakenApi.VideoListResponse.Video>> = LinkedList()
-                        for (nextOffset in IntRange(BROADCASTS_PER_REQUEST, totalVideos) step BROADCASTS_PER_REQUEST) {
-                            nextCalls.add(krakenApi.videoList(
-                                    channelName,
-                                    limit = Math.min(BROADCASTS_PER_REQUEST, totalVideos - nextOffset),
-                                    offset = nextOffset
-                            ).toRx().toObservable().flatMapIterable { it.videos })
+            return Observable.create(AsyncOnSubscribe.createStateful<VideoListState, KrakenApi.VideoListResponse.Video>({
+                VideoListState(0, AtomicBoolean(false))
+            }) { state, requested, observable ->
+                // Have we exhausted all videos?
+                if (!state.finished.get()) {
+                    // Request at most BROADCASTS_PER_REQUEST at the time
+                    val toRequest = Math.min(requested, BROADCASTS_PER_REQUEST.toLong())
+
+                    // Emit the next set of videos as sent by the API
+                    observable.onNext(krakenApi.videoList(
+                            channelName,
+                            limit = toRequest.toInt(),
+                            offset = state.offset.toInt()
+                    ).toRx().doOnSuccess { response ->
+                        // Check if there are any videos left
+                        if (response.totalVideos <= state.offset + toRequest) {
+                            // The Rx contract states you cannot do recursive calls, so we
+                            // defer onCompleted until the next update
+                            state.finished.set(true)
                         }
+                    }.toObservable().flatMapIterable {
+                        it.videos
+                    })
 
-                        Observable.concat(
-                                Observable.from(response.videos), //We start with the videos we already have
-                                Observable.concat(
-                                        Observable.from(nextCalls) // Then we perform the remaining calls in order
-                                )
-                        )
-                    }
+                    state.copy(offset = state.offset + toRequest)
+                } else {
+                    observable.onCompleted()
+                    state
+                }
+            }).compose {
+                // If limit is set, impose the limit, this will automatically
+                // affect backpressure
+                if (limit < 0) {
+                    it
+                } else {
+                    it.limit(limit)
+                }
+            }
         }
     }
 
