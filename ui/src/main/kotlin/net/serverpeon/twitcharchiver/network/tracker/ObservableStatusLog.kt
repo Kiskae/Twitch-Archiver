@@ -14,8 +14,8 @@ import org.slf4j.LoggerFactory
 import rx.Observable
 import java.io.File
 import java.nio.file.Path
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
-import kotlin.collections.set
 
 class ObservableStatusLog(resourceDirectory: ReadOnlyObjectProperty<Path?>) {
     private val IO = transformObservable(resourceDirectory) {
@@ -26,7 +26,7 @@ class ObservableStatusLog(resourceDirectory: ReadOnlyObjectProperty<Path?>) {
         }
     }
 
-    private val status: ObservableMap<Int, StatusLogPersistence.Status> = FXCollections.observableHashMap()
+    private val status: ObservableMap<Int, StatusLogPersistence.Status> = FXCollections.observableMap(ConcurrentHashMap())
     private var inLoad: Boolean = false
     private val mapInvalidation: Observable<ObservableMap<Int, StatusLogPersistence.Status>>
 
