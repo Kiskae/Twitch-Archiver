@@ -62,8 +62,10 @@ class TwitchApi(token: OAuthToken) {
                 chain.proceed(chain.request())
             }.apply {
         System.getProperty("http.debug")?.let { level ->
-            addInterceptor(HttpLoggingInterceptor()
-                    .setLevel(HttpLoggingInterceptor.Level.valueOf(level.toUpperCase()))
+            addInterceptor(
+                    HttpLoggingInterceptor(HttpLoggingInterceptor.Logger {
+                        log.info(it)
+                    }).setLevel(HttpLoggingInterceptor.Level.valueOf(level.toUpperCase()))
             )
         }
     }.build()
