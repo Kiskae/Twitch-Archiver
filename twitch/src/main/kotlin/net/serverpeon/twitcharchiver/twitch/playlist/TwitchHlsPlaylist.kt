@@ -3,16 +3,23 @@ package net.serverpeon.twitcharchiver.twitch.playlist
 import com.google.common.collect.ImmutableList
 import com.google.common.collect.Lists
 import com.google.common.io.Resources
-import net.serverpeon.twitcharchiver.hls.*
-import okhttp3.HttpUrl
-import java.time.Duration
-import kotlin.collections.map
-import kotlin.collections.reduce
-import kotlin.text.endsWith
+import net.serverpeon.twitcharchiver.hls.HlsParser
+import net.serverpeon.twitcharchiver.hls.HlsPlaylist
+import net.serverpeon.twitcharchiver.hls.HlsTag
 import net.serverpeon.twitcharchiver.hls.OfficialTags.toDuration
+import net.serverpeon.twitcharchiver.hls.TagRepository
+import okhttp3.HttpUrl
+import org.slf4j.LoggerFactory
+import java.net.URI
+import java.time.Duration
 
 internal object TwitchHlsPlaylist {
     private const val END_OFFSET_PARAM = "end_offset"
+    // Experimentally determined to be the maximum Twitch allows
+    // Any longer and it refuses to respond correctly.
+    private val TWITCH_MAXIMUM_SEGMENT_DURATION = Duration.ofSeconds(20)
+    private val log = LoggerFactory.getLogger(TwitchHlsPlaylist::class.java)
+
     private val HLS_ENCODING_PROPS = EncodingDescription(
             ImmutableList.of("-bsf:a", "aac_adtstoasc"),
             EncodingDescription.IOType.INPUT_CONCAT
@@ -32,7 +39,7 @@ internal object TwitchHlsPlaylist {
                 TWITCH_HLS_TAG_REPOSITORY
         )
 
-        val videos = reduceVideos(actualPlaylist)
+        val videos = reduceVideos(actualPlaylist, stream.uri)
         return Playlist(
                 ImmutableList.copyOf(videos),
                 actualPlaylist[EXT_X_TWITCH_TOTAL_SECS] ?: fallbackCalculateDuration(videos),
@@ -50,7 +57,7 @@ internal object TwitchHlsPlaylist {
         }
     }
 
-    private fun reduceVideos(videos: List<HlsPlaylist.Segment>): List<Playlist.Video> {
+    private fun reduceVideos(videos: List<HlsPlaylist.Segment>, source: URI): List<Playlist.Video> {
         val ret: MutableList<Playlist.Video> = Lists.newArrayList()
         val it = videos.iterator()
 
@@ -62,7 +69,8 @@ internal object TwitchHlsPlaylist {
         while (it.hasNext()) {
             val nextVideo = it.next()
             val nextUrl = HttpUrl.get(nextVideo.uri)
-            if (!startVideoUrl.encodedPath().equals(nextUrl.encodedPath())) {
+            if (!startVideoUrl.encodedPath().equals(nextUrl.encodedPath())
+                    || (length + nextVideo.info.duration) >= TWITCH_MAXIMUM_SEGMENT_DURATION) {
                 //We've gone past the previous video segment, finalize it
                 ret.add(constructVideo(startVideoUrl, HttpUrl.get(lastVideo.uri), length))
 
@@ -75,6 +83,7 @@ internal object TwitchHlsPlaylist {
         }
 
         ret.add(constructVideo(startVideoUrl, HttpUrl.get(lastVideo.uri), length))
+        log.debug("reduce on {}: {} -> {}", source, videos.size, ret.size)
         return ret
     }
 
