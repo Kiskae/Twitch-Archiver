@@ -441,7 +441,8 @@ object OfficialTags {
 
         while (parser.hasMoreAttributes()) {
             when (parser.readAttributeName()) {
-                "BANDWIDTH" -> bandwidth = parser.readDecimalInt()
+                // Twitch decides to not be spec-compliant and returns a decimal-float
+                "BANDWIDTH" -> bandwidth = parser.readDecimalFloat().toLong()
                 "PROGRAM-ID" -> programId = parser.readDecimalInt()
                 "CODECS" -> codecs = parser.readQuotedString()
                 "RESOLUTION" -> resolution = parser.readResolution(allowStrayQuotes = true)
