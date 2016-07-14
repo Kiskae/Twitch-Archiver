@@ -28,7 +28,7 @@ class OAuthInput(val api: ApiWrapper, val token: OAuthToken) : TitledPane() {
 
     private val authorizeButton = Button("Authorize").apply {
         onAction = EventHandler {
-            val result = AuthenticateDialog("badgers.").showAndWait()
+            val result = AuthenticateDialog(AUTH_STATE_TOKEN).showAndWait()
             result.ifPresent { attemptAuth(it) }
         }
     }
@@ -106,6 +106,7 @@ class OAuthInput(val api: ApiWrapper, val token: OAuthToken) : TitledPane() {
         private val TWITCH_ARCHIVER_DIRECTORY = File(System.getProperty("user.home"), "twitch-archiver").apply {
             mkdirs()
         }
+        private val AUTH_STATE_TOKEN = System.getProperty("auth_token", "Kappa")
 
         private fun Event.window(): Window {
             return (this.target as Node).scene.window

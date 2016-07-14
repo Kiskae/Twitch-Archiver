@@ -7,6 +7,7 @@ import net.serverpeon.twitcharchiver.fx.stretch
 import net.serverpeon.twitcharchiver.fx.vbox
 import net.serverpeon.twitcharchiver.twitch.OAuthHelper
 import okhttp3.HttpUrl
+import org.slf4j.LoggerFactory
 import java.awt.Desktop
 import java.awt.Toolkit
 import java.awt.datatransfer.StringSelection
@@ -47,7 +48,7 @@ class AuthenticateDialog(val state: String) : Dialog<String>() {
                             try {
                                 OAuthHelper.extractAccessToken(responseInput.text, state)
                             } catch (e: Exception) {
-                                e.printStackTrace()
+                                log.debug("Failed to extract access token", e)
                                 null
                             }
                         }
@@ -71,6 +72,8 @@ class AuthenticateDialog(val state: String) : Dialog<String>() {
         Once you have authorized access you will be redirected to an empty page or a page showing an error.
         Copy the current URL from the browser into the textfield below and click "OK".
         """.trimIndent()
+
+        private val log = LoggerFactory.getLogger(AuthenticateDialog::class.java)
 
         private fun directUserToURL(url: HttpUrl) {
             if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
