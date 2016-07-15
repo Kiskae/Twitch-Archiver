@@ -5,7 +5,7 @@ import java.net.URI
 import java.time.Duration
 
 @Suppress("UNCHECKED_CAST")
-data class HlsPlaylist<Type>(private val data: Map<HlsTag<*>, Any?>, private val segments: List<Type>) : List<Type> by segments {
+data class HlsPlaylist<out Type>(private val data: Map<HlsTag<*>, Any?>, private val segments: List<Type>) : List<Type> by segments {
     val maximum_segment_duration: Duration by TagDelegate(OfficialTags.EXT_X_TARGETDURATION, data)
 
     operator fun <T> get(key: HlsTag<T>): T? {

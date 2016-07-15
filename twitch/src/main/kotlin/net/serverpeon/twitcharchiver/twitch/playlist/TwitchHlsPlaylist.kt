@@ -1,13 +1,11 @@
 package net.serverpeon.twitcharchiver.twitch.playlist
 
+import com.google.common.base.Preconditions.checkState
 import com.google.common.collect.ImmutableList
 import com.google.common.collect.Lists
 import com.google.common.io.Resources
-import net.serverpeon.twitcharchiver.hls.HlsParser
-import net.serverpeon.twitcharchiver.hls.HlsPlaylist
-import net.serverpeon.twitcharchiver.hls.HlsTag
+import net.serverpeon.twitcharchiver.hls.*
 import net.serverpeon.twitcharchiver.hls.OfficialTags.toDuration
-import net.serverpeon.twitcharchiver.hls.TagRepository
 import okhttp3.HttpUrl
 import org.slf4j.LoggerFactory
 import java.net.URI
@@ -28,8 +26,60 @@ internal object TwitchHlsPlaylist {
     private val EXT_X_TWITCH_TOTAL_SECS: HlsTag<Duration> = HlsTag("EXT-X-TWITCH-TOTAL-SECS", appliesTo = HlsTag.AppliesTo.ENTIRE_PLAYLIST) {
         it.toDuration()
     }
-    private val TWITCH_HLS_TAG_REPOSITORY: TagRepository = TagRepository.newRepository().apply {
+    val TWITCH_HLS_TAG_REPOSITORY: TagRepository = TagRepository.newRepository().apply {
         register(EXT_X_TWITCH_TOTAL_SECS)
+
+        fun String.toResolution(): AttributeListParser.Resolution {
+            val pivot = this.indexOf('x')
+
+            checkState(pivot != -1 && (pivot < this.length - 1), "Malformed attribute list, invalid resolution format")
+
+            try {
+                val width = this.substring(0, pivot).toInt()
+                val height = this.substring(pivot + 1).toInt()
+                return AttributeListParser.Resolution(width, height)
+            } catch (ex: NumberFormatException) {
+                throw IllegalStateException("Malformed attribute list, invalid resolution value", ex)
+            }
+        }
+
+        // Override for Twitch
+        register(HlsTag(
+                "EXT-X-STREAM-INF",
+                appliesTo = HlsTag.AppliesTo.NEXT_SEGMENT,
+                unique = true
+        ) { rawData ->
+            val parser = AttributeListParser(rawData)
+
+            var bandwidth: Long? = null
+            var programId: Long? = null
+            var codecs: String? = null
+            var resolution: AttributeListParser.Resolution? = null
+            var audio: String? = null
+            var video: String? = null
+
+            while (parser.hasMoreAttributes()) {
+                when (parser.readAttributeName()) {
+                    // Twitch returns decimal-float for some reason
+                    "BANDWIDTH" -> bandwidth = parser.readDecimalFloat().toLong()
+                    "PROGRAM-ID" -> programId = parser.readDecimalInt()
+                    "CODECS" -> codecs = parser.readQuotedString()
+                    // Twitch returns a quoted version of the resolution for some reason
+                    "RESOLUTION" -> resolution = parser.readQuotedString().toResolution()
+                    "AUDIO" -> audio = parser.readQuotedString()
+                    "VIDEO" -> video = parser.readQuotedString()
+                }
+            }
+
+            OfficialTags.StreamInformation(
+                    bandwidth!!,
+                    programId,
+                    codecs?.let { ImmutableList.copyOf(it.split(',')) } ?: ImmutableList.of(),
+                    resolution,
+                    audio,
+                    video
+            )
+        }, override = true)
     }
 
     fun load(stream: HlsPlaylist.Variant): Playlist {

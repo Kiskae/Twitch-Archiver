@@ -3,10 +3,9 @@ package net.serverpeon.twitcharchiver.hls
 import com.google.common.base.Preconditions.checkState
 import java.math.BigDecimal
 import java.math.BigInteger
-import kotlin.text.*
 
 /**
- *
+ * Parser that implements the lexical rules defined by the HLS spec.
  */
 class AttributeListParser(private val input: String) {
     private var cursor: Int = 0
@@ -125,7 +124,7 @@ class AttributeListParser(private val input: String) {
      * character.  The first integer is a horizontal pixel dimension
      * (width); the second is a vertical pixel dimension (height).
      */
-    fun readResolution(allowStrayQuotes: Boolean = false): Resolution {
+    fun readResolution(): Resolution {
         val previousCursor = this.cursor
         val nextPair = findExpectedToken(',')
         val pivot = findExpectedToken('x')
@@ -134,21 +133,9 @@ class AttributeListParser(private val input: String) {
         checkState(pivot != -1 && (nextPair == -1 || pivot < nextPair), "Malformed attribute list, invalid resolution format")
 
         try {
-            val width = readUntil(pivot).let { str ->
-                if (allowStrayQuotes && str.startsWith('"')) {
-                    str.substring(1)
-                } else {
-                    str
-                }
-            }.toInt()
+            val width = readUntil(pivot).toInt()
             setAfterToken(pivot)
-            val height = readUntil(nextPair).let { str ->
-                if (allowStrayQuotes && str.endsWith('"')) {
-                    str.substring(0, str.length - 1)
-                } else {
-                    str
-                }
-            }.toInt()
+            val height = readUntil(nextPair).toInt()
             setAfterToken(nextPair)
             return Resolution(width, height)
         } catch (ex: NumberFormatException) {

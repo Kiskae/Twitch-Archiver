@@ -5,7 +5,6 @@ import com.google.common.io.Resources
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import net.serverpeon.twitcharchiver.hls.HlsParser
-import net.serverpeon.twitcharchiver.hls.TagRepository
 import net.serverpeon.twitcharchiver.twitch.api.InternalApi
 import net.serverpeon.twitcharchiver.twitch.api.KrakenApi
 import net.serverpeon.twitcharchiver.twitch.api.UsherApi
@@ -15,6 +14,7 @@ import net.serverpeon.twitcharchiver.twitch.errors.UnrecognizedVodFormatExceptio
 import net.serverpeon.twitcharchiver.twitch.json.DurationAdapter
 import net.serverpeon.twitcharchiver.twitch.json.ZonedDateTimeAdapter
 import net.serverpeon.twitcharchiver.twitch.playlist.Playlist
+import net.serverpeon.twitcharchiver.twitch.playlist.TwitchHlsPlaylist
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -200,7 +200,7 @@ class TwitchApi(token: OAuthToken) {
                         val variants = HlsParser.parseVariantPlaylist(
                                 url.uri(),
                                 Resources.asCharSource(url.url(), Charsets.UTF_8),
-                                TagRepository.DEFAULT
+                                TwitchHlsPlaylist.TWITCH_HLS_TAG_REPOSITORY
                         )
                         log.debug("Available qualities: {}", variants.map { Pair(it.info.video, it.info.bandwidth) })
                         val bestQualityStream = variants.sortedByDescending { it.info.bandwidth }.first()

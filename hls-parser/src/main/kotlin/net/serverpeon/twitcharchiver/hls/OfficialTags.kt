@@ -6,9 +6,6 @@ import java.net.URI
 import java.time.Duration
 import java.time.ZonedDateTime
 import java.util.concurrent.TimeUnit
-import kotlin.text.split
-import kotlin.text.toInt
-import kotlin.text.toLong
 
 /**
  * [http://tools.ietf.org/html/draft-pantos-http-live-streaming-08]
@@ -441,11 +438,10 @@ object OfficialTags {
 
         while (parser.hasMoreAttributes()) {
             when (parser.readAttributeName()) {
-                // Twitch decides to not be spec-compliant and returns a decimal-float
-                "BANDWIDTH" -> bandwidth = parser.readDecimalFloat().toLong()
+                "BANDWIDTH" -> bandwidth = parser.readDecimalInt()
                 "PROGRAM-ID" -> programId = parser.readDecimalInt()
                 "CODECS" -> codecs = parser.readQuotedString()
-                "RESOLUTION" -> resolution = parser.readResolution(allowStrayQuotes = true)
+                "RESOLUTION" -> resolution = parser.readResolution()
                 "AUDIO" -> audio = parser.readQuotedString()
                 "VIDEO" -> video = parser.readQuotedString()
             }
@@ -569,7 +565,7 @@ object OfficialTags {
                 "BANDWIDTH" -> bandwidth = parser.readDecimalInt()
                 "PROGRAM-ID" -> programId = parser.readDecimalInt()
                 "CODECS" -> codecs = parser.readQuotedString()
-                "RESOLUTION" -> resolution = parser.readResolution(allowStrayQuotes = true)
+                "RESOLUTION" -> resolution = parser.readResolution()
                 "VIDEO" -> video = parser.readQuotedString()
                 "URI" -> uri = URI.create(parser.readQuotedString())
             }

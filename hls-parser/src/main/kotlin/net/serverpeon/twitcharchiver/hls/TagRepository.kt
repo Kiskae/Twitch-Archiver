@@ -1,8 +1,6 @@
 package net.serverpeon.twitcharchiver.hls
 
 import com.google.common.collect.ImmutableMap
-import kotlin.collections.arrayListOf
-import kotlin.collections.forEach
 
 /**
  *
@@ -44,9 +42,23 @@ sealed class TagRepository(tags: Collection<HlsTag<*>>) {
     }
 
     class Mutable internal constructor(tags: Collection<HlsTag<*>>) : TagRepository(tags) {
-        fun <T> register(tag: HlsTag<T>) {
+        /**
+         * Register a new tag that will be extracted from the HLS playlist
+         *
+         * @param tag the handler that will handle the parsing of the associated tag
+         * @param override Whether to override an existing tag if it already exists
+         * @throws IllegalStateException Thrown if a duplicate tag is registered and [override] is false
+         */
+        fun <T> register(tag: HlsTag<T>, override: Boolean = false) {
             this.internalTags = ImmutableMap.builder<String, HlsTag<*>>()
-                    .putAll(this.internalTags)
+                    .putAll(this.internalTags.let {
+                        if (override) {
+                            // Remove any pre-existing handler with the same tag
+                            it.filterKeys { it != tag.tag }
+                        } else {
+                            it
+                        }
+                    })
                     .put(tag.tag, tag)
                     .build()
         }

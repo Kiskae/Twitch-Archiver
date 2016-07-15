@@ -59,7 +59,6 @@ class HlsParserTest {
     }
 
     @Test
-    @Ignore
     fun testPlaylistWithIFrames() {
         val url: URL = Resources.getResource("playlists/variant_playlist_iframes.m3u8")
         val playlist = HlsParser.parseVariantPlaylist(url.toURI(), Resources.asCharSource(url, Charsets.UTF_8))
@@ -77,20 +76,6 @@ class HlsParserTest {
     fun testVariantPlaylistWithVideo() {
         val url: URL = Resources.getResource("playlists/variant_alternative_video.m3u8")
         val playlist = HlsParser.parseVariantPlaylist(url.toURI(), Resources.asCharSource(url, Charsets.UTF_8))
-        assertNotNull(playlist)
-    }
-
-    @Test
-    fun testTwitchPlaylist() {
-        val url: URL = Resources.getResource("playlists/twitch.m3u8")
-        val playlist = HlsParser.parseSimplePlaylist(url.toURI(), Resources.asCharSource(url, Charsets.UTF_8))
-        assertNotNull(playlist)
-    }
-
-    @Test
-    fun testTwitchVariants() {
-        val url: URL = Resources.getResource("playlists/twitch_variant.m3u8")
-        val playlist = HlsParser.parseSimplePlaylist(url.toURI(), Resources.asCharSource(url, Charsets.UTF_8))
         assertNotNull(playlist)
     }
 }
