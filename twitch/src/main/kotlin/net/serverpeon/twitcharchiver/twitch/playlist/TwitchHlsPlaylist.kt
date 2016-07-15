@@ -30,16 +30,22 @@ internal object TwitchHlsPlaylist {
         register(EXT_X_TWITCH_TOTAL_SECS)
 
         fun String.toResolution(): AttributeListParser.Resolution {
-            val pivot = this.indexOf('x')
+            return if (this[0] == '"') {
+                this.substring(1, this.length - 1)
+            } else {
+                this
+            }.let { resolution ->
+                val pivot = resolution.indexOf('x')
 
-            checkState(pivot != -1 && (pivot < this.length - 1), "Malformed attribute list, invalid resolution format")
+                checkState(pivot != -1 && (pivot < resolution.length - 1), "Malformed attribute list, invalid resolution format")
 
-            try {
-                val width = this.substring(0, pivot).toInt()
-                val height = this.substring(pivot + 1).toInt()
-                return AttributeListParser.Resolution(width, height)
-            } catch (ex: NumberFormatException) {
-                throw IllegalStateException("Malformed attribute list, invalid resolution value", ex)
+                try {
+                    val width = resolution.substring(0, pivot).toInt()
+                    val height = resolution.substring(pivot + 1).toInt()
+                    AttributeListParser.Resolution(width, height)
+                } catch (ex: NumberFormatException) {
+                    throw IllegalStateException("Malformed attribute list, invalid resolution value", ex)
+                }
             }
         }
 
@@ -60,12 +66,12 @@ internal object TwitchHlsPlaylist {
 
             while (parser.hasMoreAttributes()) {
                 when (parser.readAttributeName()) {
-                    // Twitch returns decimal-float for some reason
+                // Twitch returns decimal-float for some reason
                     "BANDWIDTH" -> bandwidth = parser.readDecimalFloat().toLong()
                     "PROGRAM-ID" -> programId = parser.readDecimalInt()
                     "CODECS" -> codecs = parser.readQuotedString()
-                    // Twitch returns a quoted version of the resolution for some reason
-                    "RESOLUTION" -> resolution = parser.readQuotedString().toResolution()
+                // Twitch returns a quoted version of the resolution for some reason
+                    "RESOLUTION" -> resolution = parser.readEnumeratedString().toResolution()
                     "AUDIO" -> audio = parser.readQuotedString()
                     "VIDEO" -> video = parser.readQuotedString()
                 }

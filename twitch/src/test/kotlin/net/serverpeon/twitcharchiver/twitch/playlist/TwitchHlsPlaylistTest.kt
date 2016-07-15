@@ -28,4 +28,18 @@ class TwitchHlsPlaylistTest {
         )
         assertNotNull(playlist)
     }
+
+    @Test
+    fun testTwitchCompatibility() {
+        val extTag = TwitchHlsPlaylist.TWITCH_HLS_TAG_REPOSITORY["EXT-X-STREAM-INF"]!!
+        // Bandwidth and resolution incompatible -> 14/07
+        assertNotNull(extTag.processor("PROGRAM-ID=1,BANDWIDTH=2297945.0,CODECS=\"avc1.4D4020,mp4a.40.2\"," +
+                "RESOLUTION=\"1280x720\",VIDEO=\"chunked\""))
+        // Bandwidth compatible, resolution incompatible -> 15/07
+        assertNotNull(extTag.processor("PROGRAM-ID=1,BANDWIDTH=2804395,CODECS=\"avc1.4D4020,mp4a.40.2\"," +
+                "RESOLUTION=\"1280x720\",VIDEO=\"chunked\""))
+        // Bandwidth and resolution compatible -> ??
+        assertNotNull(extTag.processor("PROGRAM-ID=1,BANDWIDTH=2297945,CODECS=\"avc1.4D4020,mp4a.40.2\"," +
+                "RESOLUTION=1280x720,VIDEO=\"chunked\""))
+    }
 }
