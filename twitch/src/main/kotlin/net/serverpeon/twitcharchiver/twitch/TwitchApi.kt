@@ -56,15 +56,12 @@ class TwitchApi(token: OAuthToken) {
     }.create()
 
     private val client: OkHttpClient = OkHttpClient.Builder()
-            .addInterceptor(OAuthInterceptor(token, TWITCH_CLIENT_ID))
-            .addInterceptor { chain ->
-                log.info("Begin Request")
-                chain.proceed(chain.request())
-            }.apply {
+            .addInterceptor(OAuthInterceptor(token, TWITCH_CLIENT_ID)).apply {
         System.getProperty("http.debug")?.let { level ->
+            val interceptLogger = LoggerFactory.getLogger(OkHttpClient::class.java)
             addInterceptor(
                     HttpLoggingInterceptor(HttpLoggingInterceptor.Logger {
-                        log.info(it)
+                        interceptLogger.trace(it)
                     }).setLevel(HttpLoggingInterceptor.Level.valueOf(level.toUpperCase()))
             )
         }
@@ -129,6 +126,7 @@ class TwitchApi(token: OAuthToken) {
                 if (!state.finished.get()) {
                     // Request at most BROADCASTS_PER_REQUEST at the time
                     val toRequest = Math.min(requested, BROADCASTS_PER_REQUEST.toLong())
+                    log.debug("videoList({},{}) [toRequest = {}, total = {}]", channelName, limit, toRequest, requested)
 
                     // Emit the next set of videos as sent by the API
                     observable.onNext(krakenApi.videoList(
@@ -159,7 +157,8 @@ class TwitchApi(token: OAuthToken) {
                 } else {
                     it.limit(limit)
                 }
-            }
+                // Set a buffer equal to the maximum, ensures it always tries to request as much as it can.
+            }.onBackpressureBuffer(BROADCASTS_PER_REQUEST.toLong())
         }
     }
 
