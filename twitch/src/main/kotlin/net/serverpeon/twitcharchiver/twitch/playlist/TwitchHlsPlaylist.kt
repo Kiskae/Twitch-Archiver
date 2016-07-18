@@ -66,8 +66,7 @@ internal object TwitchHlsPlaylist {
 
             while (parser.hasMoreAttributes()) {
                 when (parser.readAttributeName()) {
-                // Twitch returns decimal-float for some reason
-                    "BANDWIDTH" -> bandwidth = parser.readDecimalFloat().toLong()
+                    "BANDWIDTH" -> bandwidth = parser.readDecimalInt()
                     "PROGRAM-ID" -> programId = parser.readDecimalInt()
                     "CODECS" -> codecs = parser.readQuotedString()
                 // Twitch returns a quoted version of the resolution for some reason
