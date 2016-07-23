@@ -95,6 +95,10 @@ class TwitchApi(token: OAuthToken) {
                         log.error("retrieveUser() failed", it)
                 }
                 .map { user ->
+                    user.identified?.apply {
+                        check(this) { "Client-ID identification failure" }
+                    }
+
                     if (user.token?.valid ?: false) {
                         Optional.of(user.token!!.userName!!)
                     } else {
@@ -193,7 +197,7 @@ class TwitchApi(token: OAuthToken) {
                         log.error("retrieveHlsPlaylist({}) failed", broadcastId, it)
                 }
                 .map { auth ->
-                    val url = UsherApi.buildResourceUrl(broadcastId, auth)
+                    val url = UsherApi.buildResourceUrl(broadcastId, auth, gson)
                     log.debug("Loading variant playlist for {}: {}", broadcastId, url)
                     try {
                         val variants = HlsParser.parseVariantPlaylist(

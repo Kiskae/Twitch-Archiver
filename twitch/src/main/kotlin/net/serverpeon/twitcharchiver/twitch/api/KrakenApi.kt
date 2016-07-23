@@ -24,7 +24,7 @@ interface KrakenApi {
     @GET("/kraken")
     fun authStatus(): Call<AuthResponse>
 
-    data class AuthResponse(val token: AuthResponse.Token?) {
+    data class AuthResponse(val token: AuthResponse.Token?, val identified: Boolean?) {
         data class Token(
                 val authorization: Token.Authorization?,
                 @SerializedName("user_name") val userName: String?,
