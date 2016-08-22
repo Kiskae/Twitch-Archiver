@@ -121,6 +121,18 @@ internal object TwitchHlsPlaylist {
         var startVideoUrl = HttpUrl.get(lastVideo.uri)
         var length = lastVideo.info.duration
 
+        if (startVideoUrl.queryParameter(END_OFFSET_PARAM) == null) {
+            log.debug("Irreducible video: {}", source)
+            return videos.map {
+                val uri = HttpUrl.get(it.uri)
+                Playlist.Video(
+                        uri,
+                        it.info.duration,
+                        muted = uri.encodedPath().endsWith("-muted.ts")
+                )
+            }
+        }
+
         while (it.hasNext()) {
             val nextVideo = it.next()
             val nextUrl = HttpUrl.get(nextVideo.uri)
