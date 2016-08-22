@@ -111,7 +111,7 @@ class ObservableProcess(private val processSource: Observable<Process>) {
         }
     }
 
-    class NonZeroExit(val process: Process) : RuntimeException(
+    class NonZeroExit(process: Process) : RuntimeException(
             "Process exited with non-zero result ${process.exitValue()}"
     )
 }
