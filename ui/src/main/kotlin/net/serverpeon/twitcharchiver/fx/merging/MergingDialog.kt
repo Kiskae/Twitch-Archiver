@@ -213,7 +213,7 @@ class MergingDialog(val segments: TrackerInfo.VideoSegments) : VBox() {
         //frame=  960 fps=0.0 q=-1.0 Lsize=    7123kB time=00:00:16.00 bitrate=3647.0kbits/s speed= 492x
         private val PROGRESS_DURATION_REGEX = Regex(".*?time=([^\\s]+).*")
         private val SPLIT_FFMPEG_DURATION = Regex("[:\\.]")
-        private const val FFMPEG_COMMANDLINE_LIMIT: Int = 2000
+        private const val FFMPEG_COMMANDLINE_LIMIT: Int = 2500
         private val log = LoggerFactory.getLogger(MergingDialog::class.java)
         private val CONST_PARAMETERS = ImmutableList.of(
                 "-y", //Allow overwrite on output
