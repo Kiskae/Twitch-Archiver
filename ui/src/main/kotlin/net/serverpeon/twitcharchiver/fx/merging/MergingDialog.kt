@@ -2,6 +2,8 @@ package net.serverpeon.twitcharchiver.fx.merging
 
 import com.google.common.base.Joiner
 import com.google.common.collect.ImmutableList
+import com.google.common.io.FileWriteMode
+import com.google.common.io.Files
 import com.google.common.io.Resources
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.property.SimpleStringProperty
@@ -23,21 +25,19 @@ import net.serverpeon.twitcharchiver.network.tracker.TrackerInfo
 import net.serverpeon.twitcharchiver.twitch.playlist.EncodingDescription
 import org.slf4j.LoggerFactory
 import rx.Observable
+import rx.schedulers.Schedulers
 import rx.subscriptions.CompositeSubscription
 import java.io.File
-import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
 import java.util.function.BiPredicate
-import kotlin.collections.map
-import kotlin.text.*
 
 class MergingDialog(val segments: TrackerInfo.VideoSegments) : VBox() {
-    val ffmpegProcessor: Observable<Double> = Observable.fromCallable {
-        ObservableProcess.create(createProcess())
+    val ffmpegProcessor: Observable<Double> = Observable.defer {
+        createProcess()
     }.flatMap {
-        it.observe {
+        ObservableProcess.create(it).observe {
             if (FFMPEG_LOG.isTraceEnabled) {
                 errorStream.subscribe { FFMPEG_LOG.trace(it) }
             }
@@ -177,7 +177,7 @@ class MergingDialog(val segments: TrackerInfo.VideoSegments) : VBox() {
     private fun findFfmpeg(root: Path): Path? {
         if (!root.toFile().exists()) return null
 
-        return Files.find(root, Int.MAX_VALUE, BiPredicate { path, attributes ->
+        return java.nio.file.Files.find(root, Int.MAX_VALUE, BiPredicate { path, attributes ->
             // Only match bin/ffmpeg.*
             path.fileName.toString().startsWith("ffmpeg") &&
                     path.parent.fileName.toString().equals("bin")
@@ -213,6 +213,7 @@ class MergingDialog(val segments: TrackerInfo.VideoSegments) : VBox() {
         //frame=  960 fps=0.0 q=-1.0 Lsize=    7123kB time=00:00:16.00 bitrate=3647.0kbits/s speed= 492x
         private val PROGRESS_DURATION_REGEX = Regex(".*?time=([^\\s]+).*")
         private val SPLIT_FFMPEG_DURATION = Regex("[:\\.]")
+        private const val FFMPEG_COMMANDLINE_LIMIT: Int = 2000
         private val log = LoggerFactory.getLogger(MergingDialog::class.java)
         private val CONST_PARAMETERS = ImmutableList.of(
                 "-y", //Allow overwrite on output
@@ -227,34 +228,62 @@ class MergingDialog(val segments: TrackerInfo.VideoSegments) : VBox() {
         activeWindow.unsubscribe()
     }
 
-    private fun createProcess(): ProcessBuilder {
-        val cmd = fullCommand()
-        log.debug("ffmpeg cmd: {}", cmd)
-        return ProcessBuilder(cmd).apply {
-            directory(segments.base.toFile()) //Run in parts directory
+    private fun createProcess(): Observable<ProcessBuilder> {
+        return fullCommand().toList().map { cmd ->
+            log.debug("ffmpeg cmd: {}", cmd)
+            ProcessBuilder(cmd).apply {
+                directory(segments.base.toFile()) //Run in parts directory
+            }
         }
     }
 
-    private fun fullCommand(): List<String> {
-        return ImmutableList.builder<String>()
-                .add(ffmpegPath())
-                .addAll(prepareOutput())
-                .addAll(segments.encoding.parameters)
-                .addAll(CONST_PARAMETERS)
-                .build()
+    private fun fullCommand(): Observable<String> {
+        return Observable.concat(
+                Observable.just(ffmpegPath()),
+                prepareOutput(),
+                Observable.from(segments.encoding.parameters),
+                Observable.from(CONST_PARAMETERS)
+        )
     }
 
-    private fun prepareOutput(): List<String> {
+    private fun prepareOutput(): Observable<String> {
         return when (segments.encoding.type) {
             EncodingDescription.IOType.INPUT_CONCAT -> {
-                ImmutableList.of("-i", "concat:" + Joiner.on("|").join(segments.parts))
+                if (segments.parts.size > FFMPEG_COMMANDLINE_LIMIT) {
+                    val baseBinary = catBinaryFiles(segments)
+                    Observable.concat(Observable.just("-i"), baseBinary.map { it.name })
+                } else {
+                    Observable.just("-i", "concat:" + Joiner.on("|").join(segments.parts))
+                }
             }
             EncodingDescription.IOType.FILE_CONCAT -> {
-                val tmpFile = File.createTempFile("ffmpeg", ".concat", segments.base.toFile())
-                tmpFile.deleteOnExit()
-                Files.write(tmpFile.toPath(), segments.parts.map { "file '$it'" })
-                ImmutableList.of("-f", "concat", "-i", tmpFile.name)
+                val inputFile = generateInputFile(segments)
+                Observable.concat(Observable.just("-f", "concat", "-i"), inputFile.map { it.name })
             }
         }
+    }
+
+    private fun generateInputFile(segments: TrackerInfo.VideoSegments): Observable<File> {
+        return Observable.fromCallable {
+            val tmpFile = File.createTempFile("ffmpeg", ".concat", segments.base.toFile())
+            tmpFile.deleteOnExit()
+            java.nio.file.Files.write(tmpFile.toPath(), segments.parts.map { "file '$it'" })
+            tmpFile
+        }
+    }
+
+    private fun catBinaryFiles(segments: TrackerInfo.VideoSegments): Observable<File> {
+        return Observable.fromCallable {
+            File.createTempFile("tmp", ".ts", segments.base.toFile()).apply {
+                deleteOnExit() // Try to clean up large files like this....
+
+                // Cat all the segments onto the single file
+                Files.asByteSink(this, FileWriteMode.APPEND).openStream().use { sink ->
+                    segments.parts.forEach {
+                        Files.asByteSource(segments.base.resolve(it).toFile()).copyTo(sink)
+                    }
+                }
+            }
+        }.subscribeOn(Schedulers.io())
     }
 }
