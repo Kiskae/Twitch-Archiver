@@ -45,7 +45,7 @@ class DownloadControl(val api: ApiWrapper,
                 .readTimeout(1, TimeUnit.MINUTES)
                 .build()
 
-        check(null == downloadInProgress) {
+        check(downloadInProgress?.isDone ?: true) {
             "Starting download while download is in progress?"
         }
         val apiLock = checkNotNull(api.lock(this)) {
