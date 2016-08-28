@@ -213,7 +213,7 @@ class TwitchApi(token: OAuthToken) {
                         }
 
                         log.debug("Loading stream playlist for {}: {}", broadcastId, bestQualityStream.uri)
-                        Playlist.loadHlsPlaylist(bestQualityStream)
+                        Playlist.loadHlsPlaylist("v$broadcastId", bestQualityStream)
                     } catch (ex: IOException) {
                         val restrictedBitrates = gson.fromJson(auth.token, TwitchToken::class.java)
                                 .chansub
@@ -243,6 +243,6 @@ class TwitchApi(token: OAuthToken) {
                     if (it.isNotRetrofitCancelled())
                         log.error("retrieveLegacyPlaylist({}) failed", broadcastId, it)
                 }
-                .map { Playlist.loadLegacyPlaylist(it) }
+                .map { Playlist.loadLegacyPlaylist(broadcastId, it) }
     }
 }

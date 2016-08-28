@@ -15,7 +15,7 @@ internal object TwitchHlsPlaylist {
     private const val END_OFFSET_PARAM = "end_offset"
     // Experimentally determined to be the maximum Twitch allows
     // Any longer and it refuses to respond correctly.
-    private val TWITCH_MAXIMUM_SEGMENT_DURATION = Duration.ofSeconds(20)
+    private val TWITCH_MAXIMUM_SEGMENT_DURATION = Duration.ofSeconds(30)
     private val log = LoggerFactory.getLogger(TwitchHlsPlaylist::class.java)
 
     private val HLS_ENCODING_PROPS = EncodingDescription(
@@ -87,7 +87,7 @@ internal object TwitchHlsPlaylist {
         }, override = true)
     }
 
-    fun load(stream: HlsPlaylist.Variant): Playlist {
+    fun load(broadcastId: String, stream: HlsPlaylist.Variant): Playlist {
         val actualPlaylist = HlsParser.parseSimplePlaylist(
                 stream.uri,
                 Resources.asCharSource(stream.uri.toURL(), Charsets.UTF_8),
@@ -96,6 +96,7 @@ internal object TwitchHlsPlaylist {
 
         val videos = reduceVideos(actualPlaylist, stream.uri)
         return Playlist(
+                broadcastId,
                 ImmutableList.copyOf(videos),
                 actualPlaylist[EXT_X_TWITCH_TOTAL_SECS] ?: fallbackCalculateDuration(videos),
                 HLS_ENCODING_PROPS

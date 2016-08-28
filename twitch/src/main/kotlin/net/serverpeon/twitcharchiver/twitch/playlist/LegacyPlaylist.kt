@@ -5,13 +5,11 @@ import net.serverpeon.twitcharchiver.twitch.api.InternalApi
 import okhttp3.HttpUrl
 import java.time.Duration
 import java.util.*
-import kotlin.collections.isNotEmpty
-import kotlin.collections.map
 
 internal object LegacyPlaylist {
     private val LEGACY_ENCODING_PROPS = EncodingDescription(ImmutableList.of(), EncodingDescription.IOType.FILE_CONCAT)
 
-    fun load(source: InternalApi.LegacyVideoSource): Optional<Playlist> {
+    fun load(broadcastId: String, source: InternalApi.LegacyVideoSource): Optional<Playlist> {
         val videos = source.chunks.live.map {
             Playlist.Video(
                     HttpUrl.parse(it.url),
@@ -22,6 +20,7 @@ internal object LegacyPlaylist {
 
         if (videos.isNotEmpty()) {
             return Optional.of(Playlist(
+                    broadcastId,
                     ImmutableList.copyOf(videos),
                     Duration.ofSeconds(source.duration),
                     LEGACY_ENCODING_PROPS
