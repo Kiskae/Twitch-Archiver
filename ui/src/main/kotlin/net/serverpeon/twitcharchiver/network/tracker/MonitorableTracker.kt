@@ -22,6 +22,7 @@ class MonitorableTracker(val wasCancelled: AtomicBoolean,
     private val progressTracker = ConcurrentProgressTracker().apply {
         reset(playlist.videos.size - partsToDownload, playlist.videos.size)
     }
+    private val log = LoggerFactory.getLogger("${MonitorableTracker::class.java.name}.${playlist.broadcastId}")
     private val currentProgress = AtomicLong(-1)
     private val isUpdating = AtomicBoolean(false)
     private val progressProp = SimpleDoubleProperty(calculateProgress(progressTracker.progress(PROGRESS_RESOLUTION)))
@@ -43,7 +44,9 @@ class MonitorableTracker(val wasCancelled: AtomicBoolean,
 
     override fun validatePost(entry: ForkJoinDownloader.DownloadEntry<Int>, response: Response, totalBytesDownloaded: Long) {
         //Heuristic, if the video is less than 1bps, its probably corrupted/wrong
-        if (playlist.length.seconds > totalBytesDownloaded) {
+        if (totalBytesDownloaded == 0L) {
+            log.warn("Twitch sent an empty file for part{}", entry.ident)
+        } else if (playlist.length.seconds > totalBytesDownloaded) {
             throw IOException("Invalid file size $totalBytesDownloaded, ${playlist.length}")
         }
 
@@ -104,6 +107,5 @@ class MonitorableTracker(val wasCancelled: AtomicBoolean,
 
     companion object {
         private const val PROGRESS_RESOLUTION: Long = 200
-        private val log = LoggerFactory.getLogger(MonitorableTracker::class.java)
     }
 }
