@@ -32,7 +32,7 @@ class ChannelInput(val api: ApiWrapper, username: ReadOnlyStringProperty, val fe
     private val videoLimit = SimpleIntegerProperty()
     private val loadingVideos = SimpleBooleanProperty(false)
     private var runningSubscription: Subscription? = null
-        set(v: Subscription?) {
+        set(v) {
             field?.unsubscribe()
             field = v
             loadingVideos.set(field != null)
