@@ -15,13 +15,20 @@ internal object TwitchHlsPlaylist {
     private const val END_OFFSET_PARAM = "end_offset"
     // Experimentally determined to be the maximum Twitch allows
     // Any longer and it refuses to respond correctly.
-    private val TWITCH_MAXIMUM_SEGMENT_DURATION = Duration.ofSeconds(30)
+    private val TWITCH_MAXIMUM_SEGMENT_DURATION = Duration.ofSeconds(19)
     private val log = LoggerFactory.getLogger(TwitchHlsPlaylist::class.java)
+    private val REDUCE_DISABLED = System.getProperty("twitch.dontreduce", "false").toBoolean()
 
     private val HLS_ENCODING_PROPS = EncodingDescription(
             ImmutableList.of("-bsf:a", "aac_adtstoasc"),
             EncodingDescription.IOType.INPUT_CONCAT
     )
+
+    init {
+        if (REDUCE_DISABLED) {
+            log.info("Playlist reduction disabled")
+        }
+    }
 
     private val EXT_X_TWITCH_TOTAL_SECS: HlsTag<Duration> = HlsTag("EXT-X-TWITCH-TOTAL-SECS", appliesTo = HlsTag.AppliesTo.ENTIRE_PLAYLIST) {
         it.toDuration()
@@ -122,7 +129,7 @@ internal object TwitchHlsPlaylist {
         var startVideoUrl = HttpUrl.get(lastVideo.uri)
         var length = lastVideo.info.duration
 
-        if (startVideoUrl.queryParameter(END_OFFSET_PARAM) == null) {
+        if (REDUCE_DISABLED || startVideoUrl.queryParameter(END_OFFSET_PARAM) == null) {
             log.debug("Irreducible video: {}", source)
             return videos.map {
                 val uri = HttpUrl.get(it.uri)
@@ -137,7 +144,7 @@ internal object TwitchHlsPlaylist {
         while (it.hasNext()) {
             val nextVideo = it.next()
             val nextUrl = HttpUrl.get(nextVideo.uri)
-            if (!startVideoUrl.encodedPath().equals(nextUrl.encodedPath())
+            if (startVideoUrl.encodedPath() != nextUrl.encodedPath()
                     || (length + nextVideo.info.duration) >= TWITCH_MAXIMUM_SEGMENT_DURATION) {
                 //We've gone past the previous video segment, finalize it
                 ret.add(constructVideo(startVideoUrl, HttpUrl.get(lastVideo.uri), length))
