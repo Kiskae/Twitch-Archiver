@@ -3,10 +3,10 @@ package net.serverpeon.twitcharchiver.fx.merging
 import com.google.common.io.CharStreams
 import com.google.common.io.LineProcessor
 import org.slf4j.LoggerFactory
+import rx.AsyncEmitter
 import rx.Observable
 import rx.Single
 import rx.schedulers.Schedulers
-import rx.subscriptions.Subscriptions
 import java.io.InputStream
 import java.io.InputStreamReader
 
@@ -15,29 +15,28 @@ class ObservableProcess(private val processSource: Observable<Process>) {
         private val log = LoggerFactory.getLogger(ObservableProcess::class.java)
 
         fun create(processBuilder: ProcessBuilder): ObservableProcess {
-            return ObservableProcess(Observable.create<Process> { sub ->
+            return ObservableProcess(Observable.fromEmitter<Process>({ emitter ->
                 log.debug("Starting process with command: {}", processBuilder.command())
                 val process = processBuilder.start()
                 log.debug("Process: {}", process)
 
-                sub.add(Subscriptions.create { // Destroy process if unsubscribed
+                emitter.setCancellation {
                     if (process.isAlive) {
                         process.destroyForcibly()
                     }
 
                     log.debug("Process: {} ended", process)
-                })
+                }
 
-                sub.onNext(process) // Emit process
+                emitter.onNext(process) // Emit process
 
                 // Since the unsubscribe method above will kill the process if it is still running when
                 //   onCompleted is called we need to block until it is finished.
                 process.waitFor()
 
-                if (!sub.isUnsubscribed) {
-                    sub.onCompleted()
-                }
-            }.subscribeOn(Schedulers.newThread())) // Avoid blocking something important by spinning up a new thread.
+                emitter.onCompleted()
+            }, AsyncEmitter.BackpressureMode.NONE)
+                    .subscribeOn(Schedulers.newThread())) // Avoid blocking something important by spinning up a new thread.
         }
     }
 
