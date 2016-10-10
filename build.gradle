@@ -9,15 +9,20 @@ buildscript {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
-apply plugin: 'kotlin'
 
-version = '2.1.4-SNAPSHOT'
+plugins {
+    id 'net.nemerosa.versioning' version '2.0.0'
+}
+
+apply plugin: 'kotlin'
 
 allprojects {
     repositories {
         mavenCentral()
         jcenter()
     }
+
+    version = versioning.info.full
 }
 
 task wrapper(type: Wrapper) {
