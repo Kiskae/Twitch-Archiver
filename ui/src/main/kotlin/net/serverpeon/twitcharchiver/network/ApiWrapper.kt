@@ -3,13 +3,13 @@ package net.serverpeon.twitcharchiver.network
 import javafx.beans.binding.BooleanBinding
 import javafx.beans.property.SimpleObjectProperty
 import net.serverpeon.twitcharchiver.ReactiveFx
-import net.serverpeon.twitcharchiver.twitch.TwitchApi
+import net.serverpeon.twitcharchiver.twitch.LegacyTwitchApi
 import org.slf4j.LoggerFactory
 import rx.Observable
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
-class ApiWrapper(private val api: TwitchApi) {
+class ApiWrapper(private val apiLegacy: LegacyTwitchApi) {
     private val ownerProp: SimpleObjectProperty<Any?> = SimpleObjectProperty(null)
     private val ownerLock: AtomicReference<Any?> = AtomicReference(null)
     private val log = LoggerFactory.getLogger(ApiWrapper::class.java)
@@ -18,9 +18,9 @@ class ApiWrapper(private val api: TwitchApi) {
         return ownerProp.isNull.or(ownerProp.isEqualTo(lockObj))
     }
 
-    fun <T> request(lockObj: Any, f: TwitchApi.() -> Observable<T>): Observable<T> {
+    fun <T> request(lockObj: Any, f: LegacyTwitchApi.() -> Observable<T>): Observable<T> {
         if (setLock(lockObj)) {
-            return api.f()
+            return apiLegacy.f()
                     .doOnError { log.warn("Error in request", it) }
                     .observeOn(ReactiveFx.scheduler)
                     .doOnUnsubscribe { // Create request and unlock

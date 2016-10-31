@@ -1,7 +1,7 @@
 package net.serverpeon.twitcharchiver.twitch.api
 
 import com.google.gson.annotations.SerializedName
-import retrofit2.Call
+import io.reactivex.Single
 import retrofit2.http.GET
 import retrofit2.http.Path
 
@@ -16,14 +16,14 @@ interface InternalApi {
      * Retrieves the extended video data, required for the legacy video storage (non-HLS)
      */
     @GET("/api/videos/{broadcastId}")
-    fun videoData(@Path("broadcastId") broadcastId: String): Call<LegacyVideoSource>
+    fun videoData(@Path("broadcastId") broadcastId: String): Single<LegacyVideoSource>
 
     /**
      * Requests an access token for the usher HLS distribution system
      * Results can be used to retrieve a playlist through [UsherApi.buildResourceUrl]
      */
     @GET("/api/vods/{broadcastId}/access_token")
-    fun requestVodAccess(@Path("broadcastId") broadcastId: Long): Call<AccessResponse>
+    fun requestVodAccess(@Path("broadcastId") broadcastId: Long): Single<AccessResponse>
 
     data class AccessResponse(@SerializedName("sig") val signature: String,
                               val token: String)

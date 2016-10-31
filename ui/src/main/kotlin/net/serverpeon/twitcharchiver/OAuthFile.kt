@@ -2,6 +2,7 @@ package net.serverpeon.twitcharchiver
 
 import com.google.common.io.CharSink
 import com.google.common.io.CharSource
+import net.serverpeon.twitcharchiver.twitch.LegacyTwitchApi
 import net.serverpeon.twitcharchiver.twitch.TwitchApi
 import java.security.MessageDigest
 import java.util.*

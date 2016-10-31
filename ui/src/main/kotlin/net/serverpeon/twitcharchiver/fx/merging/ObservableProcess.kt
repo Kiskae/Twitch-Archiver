@@ -9,6 +9,7 @@ import rx.Single
 import rx.schedulers.Schedulers
 import java.io.InputStream
 import java.io.InputStreamReader
+import java.nio.charset.Charset
 
 class ObservableProcess(private val processSource: Observable<Process>) {
     companion object {
@@ -89,7 +90,7 @@ class ObservableProcess(private val processSource: Observable<Process>) {
         private fun createLazyStream(source: Observable<InputStream>): Observable<String> {
             return source.flatMap { input ->
                 Observable.create<String> { sub ->
-                    CharStreams.readLines(InputStreamReader(input), object : LineProcessor<Unit> {
+                    CharStreams.readLines(InputStreamReader(input, Charset.defaultCharset()), object : LineProcessor<Unit> {
                         override fun getResult() {
                             if (!sub.isUnsubscribed) {
                                 sub.onCompleted()

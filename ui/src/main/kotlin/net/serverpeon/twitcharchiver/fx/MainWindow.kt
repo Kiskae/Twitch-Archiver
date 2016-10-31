@@ -6,10 +6,10 @@ import javafx.scene.layout.Region
 import net.serverpeon.twitcharchiver.fx.sections.*
 import net.serverpeon.twitcharchiver.network.ApiWrapper
 import net.serverpeon.twitcharchiver.twitch.OAuthToken
-import net.serverpeon.twitcharchiver.twitch.TwitchApi
+import net.serverpeon.twitcharchiver.twitch.LegacyTwitchApi
 
 class MainWindow(token: OAuthToken) : BorderPane() {
-    private val api = ApiWrapper(TwitchApi(token))
+    private val api = ApiWrapper(LegacyTwitchApi(token))
     private val targetDirectory = TargetDirectoryInput()
     private val parallelismPanel = ParallelismPane()
     private val downloadControl = DownloadControl(api, targetDirectory.directoryProp, parallelismPanel.parallelismProp) {

@@ -11,11 +11,15 @@ import okhttp3.Response
  *
  * It will not inject the token into insecure HTTP requests for safety.
  */
-internal class OAuthInterceptor(private val token: OAuthToken, private val clientId: String) : Interceptor {
+internal class OAuthInterceptor private constructor(
+        private val token: () -> String?,
+        private val clientId: String
+) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         return chain.proceed(chain.request().let { req ->
-            if (token.value != null && isSecureTwitchApi(req.url())) {
-                req.newBuilder().addHeader(HttpHeaders.AUTHORIZATION, "OAuth ${token.value}")
+            val currentToken = token()
+            if (currentToken != null && isSecureTwitchApi(req.url())) {
+                req.newBuilder().addHeader(HttpHeaders.AUTHORIZATION, "OAuth $currentToken")
             } else {
                 req.newBuilder()
             }.apply {
@@ -26,11 +30,15 @@ internal class OAuthInterceptor(private val token: OAuthToken, private val clien
     }
 
     private fun isSecureTwitchApi(url: HttpUrl): Boolean {
-        return url.isHttps && "api.twitch.tv".equals(url.host())
+        return url.isHttps && "api.twitch.tv" == url.host()
     }
 
     companion object {
         private val TWITCH_API_V3_JSON_MEDIATYPE = MediaType.parse("application/vnd.twitchtv.v3+json")
         private val TWITCH_CLIENT_ID_HEADER = "Client-ID"
+
+        fun static(token: String, clientId: String) = OAuthInterceptor({ token }, clientId)
+
+        fun dynamic(token: OAuthToken, clientId: String) = OAuthInterceptor({ token.value }, clientId)
     }
 }

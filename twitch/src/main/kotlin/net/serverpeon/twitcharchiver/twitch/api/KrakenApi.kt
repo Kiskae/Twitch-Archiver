@@ -1,7 +1,7 @@
 package net.serverpeon.twitcharchiver.twitch.api
 
 import com.google.gson.annotations.SerializedName
-import retrofit2.Call
+import io.reactivex.Single
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -22,7 +22,7 @@ interface KrakenApi {
      * [https://github.com/justintv/Twitch-API/blob/master/v3_resources/root.md#get-]
      */
     @GET("/kraken")
-    fun authStatus(): Call<AuthResponse>
+    fun authStatus(): Single<AuthResponse>
 
     data class AuthResponse(val token: AuthResponse.Token?, val identified: Boolean?) {
         data class Token(
@@ -41,7 +41,7 @@ interface KrakenApi {
     fun videoList(@Path("channel") channelName: String,
                   @Query("broadcasts") requestBroadcasts: Boolean = true,
                   @Query("limit") limit: Int? = null,
-                  @Query("offset") offset: Int? = null): Call<VideoListResponse>
+                  @Query("offset") offset: Int? = null): Single<VideoListResponse>
 
     data class VideoListResponse(@SerializedName("_total") val totalVideos: Int,
                                  val videos: List<VideoListResponse.Video>) {
