@@ -3,15 +3,15 @@ import org.apache.tools.ant.filters.ReplaceTokens
 apply plugin: 'kotlin'
 
 dependencies {
-    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    compile project(":hls-parser")
     compile 'com.squareup.retrofit2:retrofit:2.1.0'
     compile 'com.squareup.retrofit2:converter-gson:2.1.0'
     compile 'com.squareup.okhttp3:logging-interceptor:3.4.1'
     compile 'io.reactivex:rxjava:1.2.0'
-    compile project(":hls-parser")
+    compile 'org.slf4j:slf4j-api:1.7.21'
+
     testCompile 'junit:junit:4.12'
     testCompile "org.jetbrains.kotlin:kotlin-test:$kotlin_version"
-    compile 'org.slf4j:slf4j-api:1.7.21'
 }
 
 processResources {
