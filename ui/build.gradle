@@ -15,7 +15,8 @@ task fatJar(type: Jar, group: 'build') {
         attributes 'Version': versioning.info.display
     }
 
-    baseName = "${rootProject.name}-${versioning.info.display}"
+    baseName = "${rootProject.name}"
+    version = versioning.info.display
     from {configurations.compile.collect {it.isDirectory() ? it : zipTree(it)}}
     with jar
 
